@@ -3,6 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Connections at the zone boundary",
+    "output": "boundary-endpoints.html",
     "subtitle": "Boundary interfaces preserve the relationship between zones, without inventing a proxy service.",
     "locale": "en",
     "quality_profile": "showcase",

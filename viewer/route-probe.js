@@ -104,7 +104,7 @@
       }
       function edgeShapes(edge) {
         if (/^(path|line|polyline)$/i.test(edge.tagName)) return [edge];
-        return Array.prototype.slice.call(edge.querySelectorAll('path, line, polyline'));
+        return Array.prototype.slice.call(edge.querySelectorAll('path:not([data-ambient-flow-overlay]), line, polyline'));
       }
       function removeOverlay() {
         Array.prototype.forEach.call(svg.querySelectorAll('[data-route-probe-overlay]'), function (overlay) {
@@ -264,7 +264,7 @@
       }
       function outgoingByNode() {
         var byId = nodesById();
-        var outgoing = {};
+        var outgoing = Object.create(null);
         edges().forEach(function (edge) {
           var from = edge.getAttribute('data-edge-from');
           var to = edge.getAttribute('data-edge-to');
@@ -276,7 +276,7 @@
       }
       function reachableFrom(source) {
         var outgoing = outgoingByNode();
-        var reached = {};
+        var reached = Object.create(null);
         var queue = [source];
         reached[source] = true;
         for (var cursor = 0; cursor < queue.length; cursor += 1) {
@@ -291,7 +291,7 @@
       }
       function hopDistancesFrom(source) {
         var outgoing = outgoingByNode();
-        var distances = {};
+        var distances = Object.create(null);
         var queue = [source];
         distances[source] = 0;
         for (var cursor = 0; cursor < queue.length; cursor += 1) {
@@ -307,7 +307,7 @@
       function shortestDirectedPath(source, target) {
         if (source === target) return null;
         var outgoing = outgoingByNode();
-        var previous = {};
+        var previous = Object.create(null);
         var queue = [source];
         previous[source] = null;
         for (var cursor = 0; cursor < queue.length && !Object.prototype.hasOwnProperty.call(previous, target); cursor += 1) {
@@ -334,6 +334,8 @@
       }
       function traceGeometry(shape, step) {
         var clone = shape.cloneNode(false);
+        if (shape.getAttribute('data-motion-path')) clone.setAttribute('d', shape.getAttribute('data-motion-path'));
+        clone.removeAttribute('data-motion-path');
         clone.removeAttribute('id');
         clone.removeAttribute('class');
         clone.removeAttribute('style');
@@ -434,6 +436,8 @@
       }
       function journeyGeometry(shape) {
         var clone = shape.cloneNode(false);
+        if (shape.getAttribute('data-motion-path')) clone.setAttribute('d', shape.getAttribute('data-motion-path'));
+        clone.removeAttribute('data-motion-path');
         clone.removeAttribute('id');
         clone.removeAttribute('class');
         clone.removeAttribute('style');
@@ -794,9 +798,6 @@
         if (Array.isArray(focused)) focused = null;
         clear({ updateUrl: false, preserveView: true, restoreFocus: false });
         if (Archify.intentTrace && typeof Archify.intentTrace.clear === 'function') Archify.intentTrace.clear({ announce: false });
-        if (Archify.guidedViews && typeof Archify.guidedViews.showAll === 'function') {
-          Archify.guidedViews.showAll({ clearFocus: false, updateUrl: false });
-        }
         if (Archify.focus && typeof Archify.focus.clear === 'function') {
           Archify.focus.clear({ updateUrl: false, preserveView: true });
         }
@@ -837,7 +838,7 @@
           var sourceIds = nodes().map(function (node) { return node.getAttribute('data-node-id'); }).filter(function (id) {
             return outgoing[id] && outgoing[id].length;
           });
-          var sourceBadges = {};
+          var sourceBadges = Object.create(null);
           sourceIds.forEach(function (id) { sourceBadges[id] = viewerText('viewer.route.finder.source.badge'); });
           return {
             kind: 'route-source',
@@ -853,7 +854,7 @@
         if (mode === 'target' && startId && byId[startId]) {
           var distances = hopDistancesFrom(startId);
           var targetIds = Object.keys(distances).filter(function (id) { return id !== startId && byId[id]; });
-          var targetBadges = {};
+          var targetBadges = Object.create(null);
           targetIds.forEach(function (id) {
             targetBadges[id] = viewerCount('viewer.route.hop', distances[id]);
           });
@@ -884,26 +885,10 @@
         if (!context || !Archify.finder) return false;
         return Archify.finder.open({ context: context });
       }
-      function fallbackCopy(value) {
-        var field = document.createElement('textarea');
-        field.value = value;
-        field.setAttribute('readonly', '');
-        field.style.position = 'fixed';
-        field.style.opacity = '0';
-        document.body.appendChild(field);
-        field.select();
-        var copied = false;
-        try { copied = document.execCommand('copy'); } catch (_) {}
-        field.remove();
-        return copied;
-      }
       function copyLink() {
         if (mode !== 'result') return Promise.resolve(false);
-        var value = location.href.replace(/#.*$/, '') + '#route=' + encodeURIComponent(startId) + '~' + encodeURIComponent(endId);
-        var copy = navigator.clipboard && typeof navigator.clipboard.writeText === 'function'
-          ? navigator.clipboard.writeText(value).then(function () { return true; }).catch(function () { return fallbackCopy(value); })
-          : Promise.resolve(fallbackCopy(value));
-        return copy.then(function (copied) {
+        var value = readerLink('route=' + encodeURIComponent(startId) + '~' + encodeURIComponent(endId));
+        return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
           copyBtn.textContent = viewerText(copied ? 'viewer.common.copied' : 'viewer.common.copyFailed');
           copyBtn.setAttribute('aria-label', viewerText(copied ? 'viewer.route.copy.success' : 'viewer.route.copy.failed'));
           window.setTimeout(function () {
