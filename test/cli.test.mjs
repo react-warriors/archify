@@ -600,6 +600,25 @@ test('cli: visual-check rejects an invalid raw --out-dir before filesystem mutat
   assert.equal(evidence.screenshots.every((file) => !fs.existsSync(file)), true);
 });
 
+test('cli: browser-check invalid evidence directory preserves the requested review mode', () => {
+  const directory = path.join(tmp, 'browser-check-review-mode');
+  fs.mkdirSync(directory);
+  const out = path.join(directory, 'artifact.html');
+  fs.writeFileSync(out, '<!doctype html><html><body>delivered</body></html>');
+  const invalidOutDir = process.platform === 'win32'
+    ? `${path.parse(directory).root.slice(0, 2)}evidence`
+    : path.join(directory, 'x'.repeat(256));
+  for (const command of ['browser-check', 'visual-check']) {
+    const result = run([command, out, '--out-dir', invalidOutDir]);
+    assert.equal(result.status, 1, result.stdout || result.stderr);
+    assert.match(result.stderr, /automated browser evidence failed:/i);
+    assert.match(result.stderr, command === 'browser-check'
+      ? /perceptual visual review not requested/i
+      : /perceptual visual review pending/i);
+    assert.deepEqual(fs.readdirSync(directory), ['artifact.html']);
+  }
+});
+
 test('cli: visual-check rejects --out-dir with no value', () => {
   const out = path.join(tmp, 'visual-check-outdir-missing-value.html');
   fs.writeFileSync(out, '<!doctype html><html><body>delivered</body></html>');
