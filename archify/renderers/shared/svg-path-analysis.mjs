@@ -117,7 +117,21 @@ export function analyzeSvgPath(source) {
 
     const start = current;
     const cross = (control[0] - start[0]) * (end[1] - start[1]) - (control[1] - start[1]) * (end[0] - start[0]);
-    if (Math.abs(cross) <= 1e-9) subpath.straightSegments.push({ start, end });
+    if (Math.abs(cross) <= 1e-9) {
+      // A collinear curve can reverse beyond its endpoints. Split at that
+      // extremum so structural-border analysis sees the actual traced extent.
+      const axis = Math.abs(control[0] - start[0]) + Math.abs(end[0] - start[0])
+        >= Math.abs(control[1] - start[1]) + Math.abs(end[1] - start[1]) ? 0 : 1;
+      const denominator = start[axis] - 2 * control[axis] + end[axis];
+      const turning = denominator === 0 ? 0 : (start[axis] - control[axis]) / denominator;
+      if (turning > 0 && turning < 1) {
+        const remaining = 1 - turning;
+        const vertex = [0, 1].map(index => remaining * remaining * start[index]
+          + 2 * remaining * turning * control[index] + turning * turning * end[index]);
+        if (!vertex.every(Number.isFinite)) return failure(parameterOffset, 'computed coordinate is not finite', command);
+        subpath.straightSegments.push({ start, end: vertex }, { start: vertex, end });
+      } else subpath.straightSegments.push({ start, end });
+    }
     // 保留既有八步 Q 采样；非共线曲线不冒充结构框的直线边界。
     for (let step = 1; step <= 8; step += 1) {
       const amount = step / 8;

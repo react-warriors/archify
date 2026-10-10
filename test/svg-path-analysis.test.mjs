@@ -88,3 +88,17 @@ for (const command of ['A', 'a', 'C', 'c', 'S', 's', 'T', 't']) {
     assert.equal(result.error.tokenOffset, 7);
   });
 }
+
+test('backtracking quadratic curves do not masquerade as straight frame edges', () => {
+  for (const source of ['M0 0 Q40 0 10 0', 'M10 0 Q-30 0 0 0', 'M0 0 Q40 0 0 0', 'M0 0 Q0 40 0 10']) {
+    const [curve] = parsed(source);
+    assert.equal(curve.straightSegments.length, 2);
+    const [outbound, returning] = curve.straightSegments;
+    assert.deepEqual(outbound.start, curve.points[0]);
+    assert.deepEqual(returning.end, curve.points.at(-1));
+    assert.deepEqual(outbound.end, returning.start);
+    assert.ok(Math.max(Math.abs(outbound.end[0]), Math.abs(outbound.end[1])) > 10);
+    assert.equal(curve.segments.length, 8);
+    assert.ok(curve.points.some(point => Math.max(Math.abs(point[0]), Math.abs(point[1])) > 10));
+  }
+});

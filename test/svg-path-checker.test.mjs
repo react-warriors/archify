@@ -371,3 +371,14 @@ await import(${JSON.stringify(pathToFileURL(cli).href)});
   assert.ok(issue.supportedFixes.length > 0);
   assert.deepEqual(fs.readFileSync(output), previous);
 });
+
+test('readable-v2 detects a crossing beyond a backtracking quadratic endpoint', async t => {
+  const result = await check(t, arrow('M20 40 Q300 40 100 40')
+    + arrow('M150 20 V100', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.code, 1);
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.ok(result.receipt.composition.issues.some(item => item.code === 'composition/proper-crossing'
+    && item.point[0] === 150 && item.point[1] === 40));
+});
