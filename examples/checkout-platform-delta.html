@@ -10503,6 +10503,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
     function copyReaderText(value) {
       function fallbackCopy() {
+        var previousFocus = document.activeElement;
         var field = document.createElement(&#39;textarea&#39;);
         field.value = value;
         field.setAttribute(&#39;readonly&#39;, &#39;&#39;);
@@ -10513,6 +10514,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         var copied = false;
         try { copied = document.execCommand(&#39;copy&#39;); } catch (_) {}
         field.remove();
+        if (previousFocus &amp;&amp; previousFocus.isConnected &amp;&amp; typeof previousFocus.focus === &#39;function&#39;) {
+          try { previousFocus.focus({ preventScroll: true }); } catch (_) { try { previousFocus.focus(); } catch (_) {} }
+        }
         return copied;
       }
       var policy = document.permissionsPolicy || document.featurePolicy;
@@ -25205,6 +25209,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
     function copyReaderText(value) {
       function fallbackCopy() {
+        var previousFocus = document.activeElement;
         var field = document.createElement(&#39;textarea&#39;);
         field.value = value;
         field.setAttribute(&#39;readonly&#39;, &#39;&#39;);
@@ -25215,6 +25220,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         var copied = false;
         try { copied = document.execCommand(&#39;copy&#39;); } catch (_) {}
         field.remove();
+        if (previousFocus &amp;&amp; previousFocus.isConnected &amp;&amp; typeof previousFocus.focus === &#39;function&#39;) {
+          try { previousFocus.focus({ preventScroll: true }); } catch (_) { try { previousFocus.focus(); } catch (_) {} }
+        }
         return copied;
       }
       var policy = document.permissionsPolicy || document.featurePolicy;
