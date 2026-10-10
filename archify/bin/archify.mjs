@@ -6844,6 +6844,15 @@ async function commandValidate(args, invocation = {}) {
     code: 'cli/usage',
     supportedFixes: [`use: archify ${invokingCommand} <type> <input.json> [options]`],
   });
+  // Inspect shares validate's option parser, so identify the positional type
+  // only after options and their values have been removed.
+  if (invokingCommand === 'inspect' && type !== 'architecture') {
+    rejectCliArgument('inspect is currently supported for architecture diagrams only.', {
+      code: 'cli/unsupported-option',
+      subject: { command: 'inspect', type },
+      supportedFixes: ['use an architecture diagram', 'use validate <type> <input.json> --layout-json for workflow diagrams'],
+    });
+  }
   const renderer = rendererPath(type);
 
   if (layoutJson && !['architecture', 'workflow'].includes(type)) {
@@ -7092,13 +7101,6 @@ try {
       await commandMigrate(args);
       break;
     case 'inspect':
-      if (args[0] !== 'architecture') {
-        rejectCliArgument('inspect is currently supported for architecture diagrams only.', {
-          code: 'cli/unsupported-option',
-          subject: { command: 'inspect', type: args[0] },
-          supportedFixes: ['use an architecture diagram', 'use validate <type> <input.json> --layout-json for workflow diagrams'],
-        });
-      }
       await commandValidate([...args, '--layout-json'], { command: 'inspect' });
       break;
     case 'check':
