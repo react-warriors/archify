@@ -229,6 +229,8 @@ const FULLWIDTH_RE = /[\u1100-\u115F\u231A-\u231B\u2329-\u232A\u23E9-\u23EC\u23F
 const VARIATION_SELECTOR_FIRST = 0xfe00;
 const VARIATION_SELECTOR_LAST = 0xfe0f;
 const VARIATION_SELECTOR_EMOJI = 0xfe0f;
+const SUPPLEMENTARY_VARIATION_SELECTOR_FIRST = 0xe0100;
+const SUPPLEMENTARY_VARIATION_SELECTOR_LAST = 0xe01ef;
 
 // Width measurement is pure and the same labels are measured many times per
 // compile, so the unit count is memoized by its input string.
@@ -244,7 +246,8 @@ export function textUnits(text) {
   let units = 0;
   for (let i = 0; i < chars.length; i += 1) {
     const codePoint = chars[i].codePointAt(0);
-    if (codePoint >= VARIATION_SELECTOR_FIRST && codePoint <= VARIATION_SELECTOR_LAST) continue;
+    if ((codePoint >= VARIATION_SELECTOR_FIRST && codePoint <= VARIATION_SELECTOR_LAST)
+      || (codePoint >= SUPPLEMENTARY_VARIATION_SELECTOR_FIRST && codePoint <= SUPPLEMENTARY_VARIATION_SELECTOR_LAST)) continue;
     const next = i + 1 < chars.length ? chars[i + 1].codePointAt(0) : -1;
     if (next === VARIATION_SELECTOR_EMOJI) units += 2;
     else units += FULLWIDTH_RE.test(chars[i]) ? 2 : 1;
