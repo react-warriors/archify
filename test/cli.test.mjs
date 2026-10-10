@@ -268,6 +268,34 @@ test('cli: doctor identifies an incomplete installation', () => {
   assert.match(result.stderr, /Archify is not ready: \d+ required files? missing\./);
 });
 
+test('cli: doctor rejects directories occupying required installation files', () => {
+  const installedRoot = path.join(tmp, 'doctor-directory-skill');
+  copyInstalledSkill(installedRoot);
+  for (const relative of [
+    'assets/template.html',
+    'bin/preview.mjs',
+    'references/authoring-contract.md',
+    'schemas/architecture.schema.json',
+    'examples/web-app.architecture.json',
+  ]) {
+    const file = path.join(installedRoot, relative);
+    const original = fs.readFileSync(file);
+    fs.unlinkSync(file);
+    fs.mkdirSync(file);
+    try {
+      const result = spawnSync(process.execPath, [path.join(installedRoot, 'bin/archify.mjs'), 'doctor'], {
+        cwd: installedRoot, encoding: 'utf8',
+      });
+      assert.equal(result.status, 1, `${relative}: ${result.stdout} ${result.stderr}`);
+      assert.match(result.stderr, /Archify is not ready:/);
+      assert.doesNotMatch(result.stdout, /Archify is ready\./);
+    } finally {
+      fs.rmdirSync(file);
+      fs.writeFileSync(file, original);
+    }
+  }
+});
+
 test('cli: doctor rejects a corrupt standalone validator', () => {
   const corruptRoot = path.join(tmp, 'corrupt-skill');
   copyInstalledSkill(corruptRoot);
