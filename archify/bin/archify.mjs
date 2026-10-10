@@ -5874,6 +5874,10 @@ async function commandDoctor(args) {
   const unknown = args.find((arg) => arg.startsWith('--'));
   if (unknown) fail(`Unknown doctor option "${unknown}".`);
   if (args.length) fail(usage());
+  const requiredFileExists = (file) => {
+    try { return fs.statSync(file).isFile(); }
+    catch { return false; }
+  };
   const checks = [];
   const nodeMajor = Number.parseInt(process.versions.node.split('.')[0], 10);
   checks.push({
@@ -5886,78 +5890,78 @@ async function commandDoctor(args) {
   const template = path.join(skillRoot, 'assets/template.html');
   checks.push({
     label: 'Core template',
-    ok: fs.existsSync(template),
-    missing: fs.existsSync(template) ? 0 : 1,
+    ok: requiredFileExists(template),
+    missing: requiredFileExists(template) ? 0 : 1,
   });
 
   const examplesRenderer = path.join(skillRoot, 'scripts/render-examples.mjs');
   checks.push({
     label: 'Example renderer',
-    ok: fs.existsSync(examplesRenderer),
-    missing: fs.existsSync(examplesRenderer) ? 0 : 1,
+    ok: requiredFileExists(examplesRenderer),
+    missing: requiredFileExists(examplesRenderer) ? 0 : 1,
   });
 
   const previewRuntime = path.join(skillRoot, 'bin/preview.mjs');
   checks.push({
     label: 'Live preview runtime',
-    ok: fs.existsSync(previewRuntime),
-    missing: fs.existsSync(previewRuntime) ? 0 : 1,
+    ok: requiredFileExists(previewRuntime),
+    missing: requiredFileExists(previewRuntime) ? 0 : 1,
   });
 
   const visualCheckRuntime = path.join(skillRoot, 'bin/visual-check.mjs');
   checks.push({
     label: 'Visual-check runtime',
-    ok: fs.existsSync(visualCheckRuntime),
-    missing: fs.existsSync(visualCheckRuntime) ? 0 : 1,
+    ok: requiredFileExists(visualCheckRuntime),
+    missing: requiredFileExists(visualCheckRuntime) ? 0 : 1,
   });
 
   const finalizeRuntime = path.join(skillRoot, 'bin/finalize.mjs');
   checks.push({
     label: 'Finalize runtime',
-    ok: fs.existsSync(finalizeRuntime),
-    missing: fs.existsSync(finalizeRuntime) ? 0 : 1,
+    ok: requiredFileExists(finalizeRuntime),
+    missing: requiredFileExists(finalizeRuntime) ? 0 : 1,
   });
 
   const outputPathRuntime = path.join(skillRoot, 'renderers/shared/output-path.mjs');
   checks.push({
     label: 'Output path safety runtime',
-    ok: fs.existsSync(outputPathRuntime),
-    missing: fs.existsSync(outputPathRuntime) ? 0 : 1,
+    ok: requiredFileExists(outputPathRuntime),
+    missing: requiredFileExists(outputPathRuntime) ? 0 : 1,
   });
 
   const atomicOutputRuntime = path.join(skillRoot, 'renderers/shared/atomic-output.mjs');
   checks.push({
     label: 'Atomic output safety runtime',
-    ok: fs.existsSync(atomicOutputRuntime),
-    missing: fs.existsSync(atomicOutputRuntime) ? 0 : 1,
+    ok: requiredFileExists(atomicOutputRuntime),
+    missing: requiredFileExists(atomicOutputRuntime) ? 0 : 1,
   });
 
   const pathSemanticsRuntime = path.join(skillRoot, 'renderers/shared/path-semantics.mjs');
   checks.push({
     label: 'Physical path semantics runtime',
-    ok: fs.existsSync(pathSemanticsRuntime),
-    missing: fs.existsSync(pathSemanticsRuntime) ? 0 : 1,
+    ok: requiredFileExists(pathSemanticsRuntime),
+    missing: requiredFileExists(pathSemanticsRuntime) ? 0 : 1,
   });
 
   const sidecarPathRuntime = path.join(skillRoot, 'renderers/shared/sidecar-path.mjs');
   checks.push({
     label: 'Sidecar path naming runtime',
-    ok: fs.existsSync(sidecarPathRuntime),
-    missing: fs.existsSync(sidecarPathRuntime) ? 0 : 1,
+    ok: requiredFileExists(sidecarPathRuntime),
+    missing: requiredFileExists(sidecarPathRuntime) ? 0 : 1,
   });
 
   const portablePathRuntime = path.join(skillRoot, 'renderers/shared/portable-path.mjs');
   checks.push({
     label: 'Portable path contract runtime',
-    ok: fs.existsSync(portablePathRuntime),
-    missing: fs.existsSync(portablePathRuntime) ? 0 : 1,
+    ok: requiredFileExists(portablePathRuntime),
+    missing: requiredFileExists(portablePathRuntime) ? 0 : 1,
   });
 
   const scenarioGuide = path.join(skillRoot, 'recipes/scenarios.mjs');
   checks.push({
     label: 'Scenario recipe guide',
-    ok: fs.existsSync(scenarioGuide),
-    missing: fs.existsSync(scenarioGuide) ? 0 : 1,
+    ok: requiredFileExists(scenarioGuide),
+    missing: requiredFileExists(scenarioGuide) ? 0 : 1,
   });
 
   const authoringReferences = [
@@ -5965,7 +5969,7 @@ async function commandDoctor(args) {
     path.join(skillRoot, 'references', 'viewer-runtime.md'),
     path.join(skillRoot, 'references', 'delivery-contract.md'),
   ];
-  const authoringReferencesMissing = authoringReferences.filter((file) => !fs.existsSync(file)).length;
+  const authoringReferencesMissing = authoringReferences.filter((file) => !requiredFileExists(file)).length;
   checks.push({
     label: 'Progressive authoring references',
     ok: authoringReferencesMissing === 0,
@@ -5977,7 +5981,7 @@ async function commandDoctor(args) {
     path.join(skillRoot, 'examples/checkout-platform.base.architecture.json'),
     path.join(skillRoot, 'examples/checkout-platform.head.architecture.json'),
   ];
-  const compareMissing = [compareRuntime, ...compareFixtures].filter((file) => !fs.existsSync(file)).length;
+  const compareMissing = [compareRuntime, ...compareFixtures].filter((file) => !requiredFileExists(file)).length;
   checks.push({
     label: 'Architecture compare runtime and proof fixtures',
     ok: compareMissing === 0,
@@ -5985,7 +5989,7 @@ async function commandDoctor(args) {
   });
 
   const validators = path.join(skillRoot, 'renderers/shared/generated-validators.mjs');
-  const validatorsExist = fs.existsSync(validators);
+  const validatorsExist = requiredFileExists(validators);
   let validatorsValid = false;
   if (validatorsExist) {
     try {
@@ -6022,7 +6026,7 @@ async function commandDoctor(args) {
       path.join(skillRoot, 'schemas', `${type}.schema.json`),
       path.join(skillRoot, 'examples', examples[type]),
     ];
-    const missing = required.filter((file) => !fs.existsSync(file)).length;
+    const missing = required.filter((file) => !requiredFileExists(file)).length;
     checks.push({
       label: `${type} renderer, schema, and example`,
       ok: missing === 0,
