@@ -4706,6 +4706,22 @@ test('cli: inspect emits architecture layout json', () => {
   assert.ok(parsed.connections.length >= 1);
 });
 
+test('cli: inspect accepts options before the architecture type', () => {
+  const input = path.join(skillRoot, 'examples/web-app.architecture.json');
+  const result = run(['inspect', '--json', '--quality', 'standard', 'architecture', input]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const parsed = JSON.parse(result.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.diagram_type, 'architecture');
+
+  const workflow = path.join(skillRoot, 'examples/agent-tool-call.workflow.json');
+  const rejected = run(['inspect', '--json', 'workflow', workflow]);
+  assert.equal(rejected.status, 2);
+  const failure = JSON.parse(rejected.stdout);
+  assert.equal(failure.diagnostics[0].code, 'cli/unsupported-option');
+  assert.deepEqual(failure.diagnostics[0].subject, { command: 'inspect', type: 'workflow' });
+});
+
 test('cli: inspect remains architecture-only while workflow uses validate --layout-json', () => {
   const input = path.join(skillRoot, 'examples', 'agent-tool-call.workflow.json');
   const result = run(['inspect', 'workflow', input]);
