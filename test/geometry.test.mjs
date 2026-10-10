@@ -1288,3 +1288,13 @@ test('applyTemplate requires the new evidence slot only when evidence is present
     sourceEvidence: { verified: true },
   }), /repository evidence requires placeholder/);
 });
+
+test('textUnits does not add advance width for supplementary variation selectors', () => {
+  for (let codePoint = 0xE0100; codePoint <= 0xE01EF; codePoint += 1) {
+    const selector = String.fromCodePoint(codePoint);
+    assert.equal(textUnits(selector), 0);
+    assert.equal(textUnits(`漢${selector}`), textUnits('漢'));
+    assert.equal(textUnits(`a${selector}`), textUnits('a'));
+  }
+  assert.equal(textUnits(String.fromCodePoint(0xE01F0)), 1, 'unassigned neighbour is outside the selector range');
+});
