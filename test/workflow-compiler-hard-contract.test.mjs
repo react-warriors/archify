@@ -2801,10 +2801,14 @@ test('a group label blocking an authored endpoint side offers the group placemen
   assert.doesNotMatch(diagnostic.supportedFixes.join('\n'), /route to verified preset/);
   assert.doesNotMatch(diagnostic.supportedFixes.join('\n'), /remove route from edge/);
 
-  // Applying it must actually compile, which is what makes it publishable.
+  // Applying the advertised span must actually compile, which is what makes it
+  // publishable. Parse it rather than hard-coding, so a wrong advertised span
+  // cannot pass by accident.
+  const advertised = /fromCol to (\d+) and toCol to (\d+)/.exec(groupFix);
+  assert.ok(advertised, groupFix);
   const repaired = clone(document);
-  repaired.groups[0].fromCol = 0;
-  repaired.groups[0].toCol = 2;
+  repaired.groups[0].fromCol = Number(advertised[1]);
+  repaired.groups[0].toCol = Number(advertised[2]);
   const after = compileWorkflow({ workflow: repaired, qualityProfile: 'showcase' });
   assert.equal(after.ok, true, JSON.stringify(after.diagnostics, null, 2));
 });
