@@ -382,3 +382,13 @@ test('readable-v2 detects a crossing beyond a backtracking quadratic endpoint', 
   assert.ok(result.receipt.composition.issues.some(item => item.code === 'composition/proper-crossing'
     && item.point[0] === 150 && item.point[1] === 40));
 });
+
+test('readable-v2 retains crossings on a finite huge quadratic reversal', async t => {
+  const result = await check(t, arrow('M0 0 Q1e308 0 0 0')
+    + arrow('M4e307 -0.5 V0.5', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.code, 1);
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.ok(result.receipt.composition.issues.some(item => item.code === 'composition/proper-crossing'), JSON.stringify(result.receipt.composition.issues));
+});

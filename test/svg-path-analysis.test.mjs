@@ -102,3 +102,17 @@ test('backtracking quadratic curves do not masquerade as straight frame edges', 
     assert.ok(curve.points.some(point => Math.max(Math.abs(point[0]), Math.abs(point[1])) > 10));
   }
 });
+
+test('finite huge collinear quadratic retains its actual reversal', () => {
+  const [curve] = parsed('M0 0 Q1e308 0 0 0');
+  assert.deepEqual(curve.straightSegments, [
+    { start: [0, 0], end: [5e307, 0] }, { start: [5e307, 0], end: [0, 0] },
+  ]);
+  assert.ok(curve.points.every(point => point.every(Number.isFinite)));
+});
+
+test('near-collinear quadratic preserves the tolerated chord without inventing straight reversals', () => {
+  const [curve] = parsed('M0 0 Q300 0.001 0.000001 0');
+  assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [0.000001, 0] }]);
+  assert.ok(curve.points.some(point => point[1] > 0));
+});
