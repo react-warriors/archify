@@ -390,5 +390,24 @@ test('readable-v2 retains crossings on a finite huge quadratic reversal', async 
   });
   assert.equal(result.code, 1);
   assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
-  assert.ok(result.receipt.composition.issues.some(item => item.code === 'composition/proper-crossing'), JSON.stringify(result.receipt.composition.issues));
+  const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+  assert.ok(crossing, JSON.stringify(result.receipt.composition.issues));
+  assert.deepEqual(crossing.point, [4e307, 0], 'machine-readable evidence preserves the finite intersection');
 });
+
+for (const [curve, other, expectedX] of [
+  ['M0 .006 Q60 .009 20 .007', 'M30 -1 V1', 30],
+  ['M0 0 Q8e307 20 1e307 2.5', 'M8e306 1.5 V2.5', 8e306],
+]) {
+  test(`readable-v2 reports a finite crossing for ${curve}`, async t => {
+    const result = await check(t, arrow(curve)
+      + arrow(other, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.code, 1);
+    const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+    assert.ok(crossing, JSON.stringify(result.receipt.composition.issues));
+    assert.ok(crossing.point.every(Number.isFinite), JSON.stringify(crossing));
+    assert.ok(Math.abs(crossing.point[0] / expectedX - 1) < 1e-14);
+  });
+}

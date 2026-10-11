@@ -317,7 +317,7 @@ if (svgMatches.length === 1) {
         code: 'composition/proper-crossing',
         relationship: relationshipRecord(hit.left),
         otherRelationship: relationshipRecord(hit.right),
-        point: hit.point.map((value) => Math.round(value * 10) / 10),
+        point: hit.point.map(roundedCoordinate),
       })),
       ...ambiguousCorridors.map((hit) => ({
         severity: corridorIsError ? 'error' : 'warning',
@@ -1031,8 +1031,13 @@ function frameRecord(frame) {
   return { kind: frame.kind, id: frame.id };
 }
 
+function roundedCoordinate(value) {
+  // At this magnitude the input already has much less than decimal precision.
+  return Math.abs(value) > Number.MAX_VALUE / 10 ? value : Math.round(value * 10) / 10;
+}
+
 function formatPoint(point) {
-  return point.map((value) => Math.round(value * 10) / 10).join(', ');
+  return point.map(roundedCoordinate).join(', ');
 }
 
 function lineSegments(attrs) {
@@ -1246,21 +1251,26 @@ function estimatedTextWidth(text, fontSize) {
 }
 
 function properSegmentIntersection(a, b, c, d) {
-  const abC = crossProduct(a, b, c);
-  const abD = crossProduct(a, b, d);
-  const cdA = crossProduct(c, d, a);
-  const cdB = crossProduct(c, d, b);
   const epsilon = 1e-9;
-  const opposite = (left, right) => (left > epsilon && right < -epsilon) || (left < -epsilon && right > epsilon);
+  const scales = [0, 1].map(axis => Math.max(...[a, b, c, d].map(point => Math.abs(point[axis]))) || 1);
+  const [sa, sb, sc, sd] = [a, b, c, d].map(point => point.map((value, axis) => value / scales[axis]));
+  const scaledEpsilon = epsilon / scales[0] / scales[1];
+  const abC = crossProduct(sa, sb, sc);
+  const abD = crossProduct(sa, sb, sd);
+  const cdA = crossProduct(sc, sd, sa);
+  const cdB = crossProduct(sc, sd, sb);
+  const opposite = (left, right) => (left > scaledEpsilon && right < -scaledEpsilon) || (left < -scaledEpsilon && right > scaledEpsilon);
   if (!opposite(abC, abD) || !opposite(cdA, cdB)) return null;
-  const denominator = (a[0] - b[0]) * (c[1] - d[1]) - (a[1] - b[1]) * (c[0] - d[0]);
-  if (Math.abs(denominator) < epsilon) return null;
-  const ab = a[0] * b[1] - a[1] * b[0];
-  const cd = c[0] * d[1] - c[1] * d[0];
-  return [
-    (ab * (c[0] - d[0]) - (a[0] - b[0]) * cd) / denominator,
-    (ab * (c[1] - d[1]) - (a[1] - b[1]) * cd) / denominator,
-  ];
+
+  const ab = [sb[0] - sa[0], sb[1] - sa[1]];
+  const cd = [sd[0] - sc[0], sd[1] - sc[1]];
+  const denominator = ab[0] * cd[1] - ab[1] * cd[0];
+  if (Math.abs(denominator) < scaledEpsilon) return null;
+  const ac = [sc[0] - sa[0], sc[1] - sa[1]];
+  const amount = (ac[0] * cd[1] - ac[1] * cd[0]) / denominator;
+  // A proper intersection lies inside the segment. Interpolate normalized
+  // coordinates, avoiding overflowing products in the line determinant.
+  return [0, 1].map(axis => ((1 - amount) * sa[axis] + amount * sb[axis]) * scales[axis]);
 }
 
 function crossProduct(a, b, c) {

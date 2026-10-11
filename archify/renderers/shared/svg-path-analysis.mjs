@@ -117,7 +117,15 @@ export function analyzeSvgPath(source) {
 
     const start = current;
     const cross = (control[0] - start[0]) * (end[1] - start[1]) - (control[1] - start[1]) * (end[0] - start[0]);
-    if (cross === 0) {
+    // Normalize each axis separately: a single scale would erase a small
+    // vertical component next to a huge horizontal coordinate. The error
+    // bound admits arithmetic round-off, not the existing near-collinear band.
+    const scales = [0, 1].map(axis => Math.max(Math.abs(start[axis]), Math.abs(control[axis]), Math.abs(end[axis])) || 1);
+    const scaled = [start, control, end].map(point => point.map((value, axis) => value / scales[axis]));
+    const left = (scaled[1][0] - scaled[0][0]) * (scaled[2][1] - scaled[0][1]);
+    const right = (scaled[1][1] - scaled[0][1]) * (scaled[2][0] - scaled[0][0]);
+    const collinear = Math.abs(left - right) <= 8 * Number.EPSILON * (Math.abs(left) + Math.abs(right));
+    if (collinear) {
       // A collinear curve can reverse beyond its endpoints. Split at that
       // extremum so structural-border analysis sees the actual traced extent.
       const axis = Math.abs(control[0] - start[0]) + Math.abs(end[0] - start[0])

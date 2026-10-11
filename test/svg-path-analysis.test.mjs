@@ -116,3 +116,12 @@ test('near-collinear quadratic preserves the tolerated chord without inventing s
   assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [0.000001, 0] }]);
   assert.ok(curve.points.some(point => point[1] > 0));
 });
+
+for (const source of ['M0 .006 Q60 .009 20 .007', 'M0 0 Q8e307 20 1e307 2.5']) {
+  test(`collinear reversal survives decimal round-off or overflowing products: ${source}`, () => {
+    const [curve] = parsed(source);
+    assert.equal(curve.straightSegments.length, 2);
+    assert.ok(curve.straightSegments.every(segment => [...segment.start, ...segment.end].every(Number.isFinite)));
+    assert.ok(curve.straightSegments[0].end[0] > curve.points.at(-1)[0]);
+  });
+}
