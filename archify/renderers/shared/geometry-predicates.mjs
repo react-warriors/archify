@@ -41,22 +41,26 @@ export function crossProductSign(a, b, c) {
   return magnitude > tolerance ? (determinant > 0n ? 1 : -1) : 0;
 }
 
-// Convert a positive ratio below one without overflowing either integer or
-// erasing a subnormal quotient. Round the exact fraction to nearest, ties-even.
-function unitRatio(numerator, denominator) {
+// Round a signed rational times a binary power once, to nearest, ties-even.
+// Shift integers before division so cancellation and subnormals are preserved.
+function rationalNumber(numerator, denominator, binaryPower = 0) {
+  if (numerator === 0n) return 0;
+  const negative = numerator < 0n;
+  if (negative) numerator = -numerator;
   let exponent = numerator.toString(2).length - denominator.toString(2).length;
-  if ((numerator << BigInt(-exponent)) < denominator) exponent -= 1;
-  const power = Math.max(exponent - 52, -1074);
-  const scaled = numerator << BigInt(-power);
-  let quotient = scaled / denominator;
-  const remainder = scaled % denominator;
+  if (exponent < 0 ? (numerator << BigInt(-exponent)) < denominator
+    : numerator < (denominator << BigInt(exponent))) exponent -= 1;
+  const power = Math.max(exponent + binaryPower - 52, -1074);
+  const shift = binaryPower - power;
+  if (shift >= 0) numerator <<= BigInt(shift);
+  else denominator <<= BigInt(-shift);
+  let quotient = numerator / denominator;
+  const remainder = numerator % denominator;
   if (2n * remainder > denominator || (2n * remainder === denominator && quotient % 2n === 1n)) quotient += 1n;
-  return Number(quotient) * 2 ** power;
+  return (negative ? -Number(quotient) : Number(quotient)) * 2 ** power;
 }
 
-// The orientation gate has already accepted a proper crossing. If common
-// normalization collapses a segment, recover its parameters from exact inputs.
-export function exactProperIntersectionAmounts(a, b, c, d) {
+function properIntersection(a, b, c, d) {
   const exact = exactCoordinates([a, b, c, d]);
   if (!exact) return null;
   const [ax, ay, bx, by, cx, cy, dx, dy] = exact.coordinates;
@@ -71,5 +75,42 @@ export function exactProperIntersectionAmounts(a, b, c, d) {
     otherNumerator = -otherNumerator;
   }
   if (numerator <= 0n || numerator >= denominator || otherNumerator <= 0n || otherNumerator >= denominator) return null;
-  return [unitRatio(numerator, denominator), unitRatio(otherNumerator, denominator)];
+  return { ...exact, numerator, otherNumerator, denominator };
+}
+
+export function exactProperIntersectionAmounts(a, b, c, d) {
+  const intersection = properIntersection(a, b, c, d);
+  if (!intersection) return null;
+  const { numerator, otherNumerator, denominator } = intersection;
+  return [rationalNumber(numerator, denominator), rationalNumber(otherNumerator, denominator)];
+}
+
+// The orientation gate has already accepted a proper crossing. Evaluate its
+// coordinates exactly before rounding; rounded interior parameters can lose
+// small coordinates near a large endpoint even on the shorter segment.
+export function exactProperIntersectionPoint(a, b, c, d) {
+  const intersection = properIntersection(a, b, c, d);
+  if (!intersection) return null;
+  const { power, coordinates, numerator, denominator } = intersection;
+  return [0, 1].map(axis => rationalNumber(coordinates[axis] * denominator
+    + (coordinates[axis + 2] - coordinates[axis]) * numerator, denominator, power));
+}
+
+// Test the turning parameter's strict bounds as integers, then evaluate the
+// Bernstein polynomial exactly. A true interior parameter can round to 0/1.
+export function exactQuadraticTurningPoint(start, control, end, axis) {
+  const exact = exactCoordinates([start, control, end]);
+  if (!exact) return null;
+  const { power, coordinates } = exact;
+  let numerator = coordinates[axis] - coordinates[axis + 2];
+  let denominator = coordinates[axis] - 2n * coordinates[axis + 2] + coordinates[axis + 4];
+  if (denominator < 0n) {
+    denominator = -denominator;
+    numerator = -numerator;
+  }
+  if (numerator <= 0n || numerator >= denominator) return null;
+  const remaining = denominator - numerator;
+  return [0, 1].map(index => rationalNumber(remaining * remaining * coordinates[index]
+    + 2n * remaining * numerator * coordinates[index + 2]
+    + numerator * numerator * coordinates[index + 4], denominator * denominator, power));
 }

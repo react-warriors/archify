@@ -2,7 +2,7 @@
 
 import fs from 'node:fs';
 import { analyzeSvgPath } from '../renderers/shared/svg-path-analysis.mjs';
-import { crossProductSign, exactProperIntersectionAmounts } from '../renderers/shared/geometry-predicates.mjs';
+import { crossProductSign, exactProperIntersectionPoint } from '../renderers/shared/geometry-predicates.mjs';
 import { textUnits } from '../renderers/shared/utils.mjs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -1255,20 +1255,9 @@ function properSegmentIntersection(a, b, c, d) {
   const opposite = (left, right) => left * right < 0;
   if (!opposite(crossProductSign(a, b, c), crossProductSign(a, b, d))
     || !opposite(crossProductSign(c, d, a), crossProductSign(c, d, b))) return null;
-  // Normalized parameters can lose coordinates even while remaining interior.
-  // Recover exact parameters only after the existing absolute-tolerance gate.
-  const amounts = exactProperIntersectionAmounts(a, b, c, d);
-  if (!amounts) return null;
-  const [amount, otherAmount] = amounts;
-  // Use the smaller coordinate span on each axis: a long segment's parameter
-  // can round to an endpoint and erase a coordinate retained by the other line.
-  return [0, 1].map(axis => {
-    const useFirst = Math.abs(b[axis] - a[axis]) <= Math.abs(d[axis] - c[axis]);
-    const start = (useFirst ? a : c)[axis], end = (useFirst ? b : d)[axis];
-    const t = useFirst ? amount : otherAmount;
-    const delta = end - start;
-    return Number.isFinite(delta) ? start + t * delta : (1 - t) * start + t * end;
-  });
+  // Reconstruct coordinates exactly before rounding instead of interpolating
+  // rounded parameters, which can erase small endpoint coordinates.
+  return exactProperIntersectionPoint(a, b, c, d);
 }
 
 function segmentIntersectsBox(segment, box) {

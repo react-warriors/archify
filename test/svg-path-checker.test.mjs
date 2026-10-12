@@ -622,3 +622,43 @@ for (const [name, lines] of [
       /\[2535473813651456, 0\]/);
   });
 }
+
+for (const [name, curve, other, point] of [
+  ['horizontal', 'M-1e308 0 Q1e291 0 0 0', 'M5e273 -20 V20', [5e273, 0]],
+  ['horizontal reversed', 'M0 0 Q1e291 0 -1e308 0', 'M5e273 -20 V20', [5e273, 0]],
+  ['vertical', 'M0 -1e308 Q0 1e291 0 0', 'M-20 5e273 H20', [0, 5e273]],
+  ['vertical reversed', 'M0 0 Q0 1e291 0 -1e308', 'M-20 5e273 H20', [0, 5e273]],
+]) {
+  test(`public readable-v2 detects a crossing inside a quadratic endpoint-rounding excursion: ${name}`, async t => {
+    const result = await check(t, arrow(curve)
+      + arrow(other, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.code, 1);
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, point);
+  });
+}
+
+const roundedIntersectionLines = [
+  [[-1e17, 3], [4, 3]],
+  [[4, 2], [-1e17, 1e17]],
+];
+for (const [name, lines] of [
+  ['original', roundedIntersectionLines],
+  ['exchanged', [...roundedIntersectionLines].reverse()],
+  ['first reversed', [[...roundedIntersectionLines[0]].reverse(), roundedIntersectionLines[1]]],
+  ['both reversed and exchanged', [...roundedIntersectionLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 rounds exact crossing coordinates once instead of interpolating rounded parameters: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [3, 3]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[3, 3\]/);
+  });
+}

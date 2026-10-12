@@ -181,3 +181,19 @@ test('canceled finite products retain exact quadratic curvature', () => {
   const [collinear] = parsed('M0 0 Q1.5430730396329725e308 0.02 7.715365198164863e307 0.01');
   assert.equal(collinear.straightSegments.length, 2, 'the exact collinear reversal remains visible');
 });
+
+for (const [name, source, vertex] of [
+  ['horizontal', 'M-1e308 0 Q1e291 0 0 0', [1e274, 0]],
+  ['horizontal reversed', 'M0 0 Q1e291 0 -1e308 0', [1e274, 0]],
+  ['vertical', 'M0 -1e308 Q0 1e291 0 0', [0, 1e274]],
+  ['vertical reversed', 'M0 0 Q0 1e291 0 -1e308', [0, 1e274]],
+]) {
+  test(`collinear quadratic retains its exact excursion when the turning parameter rounds to an endpoint: ${name}`, () => {
+    const [curve] = parsed(source);
+    assert.equal(curve.straightSegments.length, 2);
+    assert.deepEqual(curve.straightSegments[0].end, vertex);
+    assert.deepEqual(curve.straightSegments[1].start, vertex);
+    assert.ok(curve.straightSegments.every(segment => [...segment.start, ...segment.end].every(Number.isFinite)));
+    assert.equal(curve.segments.length, 8, 'the existing sampled path contract remains unchanged');
+  });
+}

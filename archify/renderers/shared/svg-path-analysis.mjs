@@ -1,4 +1,4 @@
-import { crossProductSign } from './geometry-predicates.mjs';
+import { crossProductSign, exactQuadraticTurningPoint } from './geometry-predicates.mjs';
 
 // 仅分析静态检查器需要的路径子集，不作为通用 SVG 渲染器。
 const NUMBER = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/y;
@@ -143,17 +143,8 @@ export function analyzeSvgPath(source) {
       // A collinear curve can reverse beyond its endpoints. Split at that
       // extremum so structural-border analysis sees the actual traced extent.
       const axis = scales[0] >= scales[1] ? 0 : 1;
-      const denominator = scaled[2][axis] - 2 * scaled[1][axis];
-      const turning = denominator === 0 ? 0 : -scaled[1][axis] / denominator;
-      if (turning > 0 && turning < 1) {
-        // De Casteljau interpolation preserves a constant axis exactly and
-        // evaluates translated vertices without summing rounded large terms.
-        const interpolate = (left, right) => {
-          const delta = right - left;
-          return Number.isFinite(delta) ? left + turning * delta : (1 - turning) * left + turning * right;
-        };
-        const vertex = [0, 1].map(index => interpolate(interpolate(start[index], control[index]),
-          interpolate(control[index], end[index])));
+      const vertex = exactQuadraticTurningPoint(start, control, end, axis);
+      if (vertex) {
         if (!vertex.every(Number.isFinite)) return failure(parameterOffset, 'computed coordinate is not finite', command);
         subpath.straightSegments.push({ start, end: vertex }, { start: vertex, end });
       } else subpath.straightSegments.push({ start, end });
