@@ -18,11 +18,17 @@ function exactCoordinates(points) {
   return { power, coordinates: parts.map(([value, exponent]) => value << BigInt(exponent - power)) };
 }
 
-// Preserve the existing finite determinant/tolerance behavior. Only overflowing
-// products use exact IEEE754 dyadics; their exponent range bounds the BigInts.
+// Use the orient2d round-off bound for coordinate differences and products.
+// Uncertain signs/tolerance comparisons use exact bounded IEEE754 dyadics.
 export function crossProductSign(a, b, c) {
-  const raw = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-  if (Number.isFinite(raw)) return Math.abs(raw) > EPSILON ? Math.sign(raw) : 0;
+  const left = (b[0] - a[0]) * (c[1] - a[1]);
+  const right = (b[1] - a[1]) * (c[0] - a[0]);
+  const raw = left - right;
+  const roundoff = (3 + 8 * Number.EPSILON) * (Number.EPSILON / 2) * (Math.abs(left) + Math.abs(right));
+  if (Number.isFinite(raw) && Number.isFinite(roundoff)) {
+    if (Math.abs(raw) > EPSILON + roundoff) return Math.sign(raw);
+    if (Math.abs(raw) + roundoff < EPSILON) return 0;
+  }
   const exact = exactCoordinates([a, b, c]);
   if (!exact) return 0;
   const { power, coordinates: [ax, ay, bx, by, cx, cy] } = exact;

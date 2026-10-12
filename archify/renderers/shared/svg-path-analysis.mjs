@@ -118,7 +118,6 @@ export function analyzeSvgPath(source) {
     if (upper !== 'Q') { line(end); continue; }
 
     const start = current;
-    const cross = (control[0] - start[0]) * (end[1] - start[1]) - (control[1] - start[1]) * (end[0] - start[0]);
     // Subtract the local origin before scaling so a large translation cannot
     // erase a short displacement. Scale absolute coordinates first only when
     // the subtraction itself overflows. Independent axes retain thin curves.
@@ -158,7 +157,7 @@ export function analyzeSvgPath(source) {
         if (!vertex.every(Number.isFinite)) return failure(parameterOffset, 'computed coordinate is not finite', command);
         subpath.straightSegments.push({ start, end: vertex }, { start: vertex, end });
       } else subpath.straightSegments.push({ start, end });
-    } else if (Math.abs(cross) <= 1e-9) {
+    } else if (curvature === 0) {
       subpath.straightSegments.push({ start, end });
     }
     // 保留既有八步 Q 采样；非共线曲线不冒充结构框的直线边界。

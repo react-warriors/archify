@@ -591,3 +591,34 @@ for (const [name, lines] of [
     assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 0]);
   });
 }
+
+test('public readable-v2 preserves curvature when finite products cancel', async t => {
+  const result = await check(t, arrow('M0 0 Q1.5430730396329725e308 0.019999999999999997 7.715365198164863e307 0.01'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+const boundaryParameterLines = [
+  [[0, -2535473813651456], [4507997673881600, 1972523860230144]],
+  [[2535473813651456, 0.5], [2535473813651456.5, -50]],
+];
+for (const [name, lines] of [
+  ['original', boundaryParameterLines],
+  ['exchanged', [...boundaryParameterLines].reverse()],
+  ['long reversed', [[...boundaryParameterLines[0]].reverse(), boundaryParameterLines[1]]],
+  ['both reversed and exchanged', [...boundaryParameterLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 retains actual coordinates when normalized parameters round to a boundary: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point,
+      [2535473813651456, 0]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'),
+      /\[2535473813651456, 0\]/);
+  });
+}

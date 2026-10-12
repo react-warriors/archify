@@ -1252,42 +1252,12 @@ function estimatedTextWidth(text, fontSize) {
 }
 
 function properSegmentIntersection(a, b, c, d) {
-  const epsilon = 1e-9;
-  const points = [a, b, c, d];
-  const scaled = points.map(() => []);
-  const scales = [0, 1].map(axis => {
-    const offsets = points.map(point => point[axis] - a[axis]);
-    const finite = offsets.every(Number.isFinite);
-    const scale = Math.max(...(finite ? offsets : points.map(point => point[axis])).map(Math.abs)) || 1;
-    for (let index = 0; index < points.length; index += 1) {
-      scaled[index][axis] = finite ? offsets[index] / scale : points[index][axis] / scale - a[axis] / scale;
-    }
-    return scale;
-  });
-  const [sa, sb, sc, sd] = scaled;
-  const scaledEpsilon = epsilon / Math.max(...scales) / Math.min(...scales);
-  const orientation = (first, second, third, rawFirst, rawSecond, rawThird) => {
-    const normalized = crossProduct(first, second, third);
-    // Validate normalized round-off against finite raw evidence, or an exact
-    // determinant when products overflow, at the existing absolute tolerance.
-    const sign = crossProductSign(rawFirst, rawSecond, rawThird);
-    return sign ? sign * Math.max(Math.abs(normalized), Number.MIN_VALUE, 2 * scaledEpsilon) : 0;
-  };
-  const abC = orientation(sa, sb, sc, a, b, c);
-  const abD = orientation(sa, sb, sd, a, b, d);
-  const cdA = orientation(sc, sd, sa, c, d, a);
-  const cdB = orientation(sc, sd, sb, c, d, b);
-  const opposite = (left, right) => (left > scaledEpsilon && right < -scaledEpsilon) || (left < -scaledEpsilon && right > scaledEpsilon);
-  if (!opposite(abC, abD) || !opposite(cdA, cdB)) return null;
-
-  const ab = [sb[0] - sa[0], sb[1] - sa[1]];
-  const cd = [sd[0] - sc[0], sd[1] - sc[1]];
-  const denominator = ab[0] * cd[1] - ab[1] * cd[0];
-  const ac = [sc[0] - sa[0], sc[1] - sa[1]];
-  let amounts = denominator === 0 || Math.abs(denominator) < scaledEpsilon
-    ? null
-    : [(ac[0] * cd[1] - ac[1] * cd[0]) / denominator, (ac[0] * ab[1] - ac[1] * ab[0]) / denominator];
-  if (!amounts || !amounts.every(Number.isFinite)) amounts = exactProperIntersectionAmounts(a, b, c, d);
+  const opposite = (left, right) => left * right < 0;
+  if (!opposite(crossProductSign(a, b, c), crossProductSign(a, b, d))
+    || !opposite(crossProductSign(c, d, a), crossProductSign(c, d, b))) return null;
+  // Normalized parameters can lose coordinates even while remaining interior.
+  // Recover exact parameters only after the existing absolute-tolerance gate.
+  const amounts = exactProperIntersectionAmounts(a, b, c, d);
   if (!amounts) return null;
   const [amount, otherAmount] = amounts;
   // Use the smaller coordinate span on each axis: a long segment's parameter
@@ -1299,10 +1269,6 @@ function properSegmentIntersection(a, b, c, d) {
     const delta = end - start;
     return Number.isFinite(delta) ? start + t * delta : (1 - t) * start + t * end;
   });
-}
-
-function crossProduct(a, b, c) {
-  return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
 }
 
 function segmentIntersectsBox(segment, box) {

@@ -173,3 +173,11 @@ test('overflowing products retain genuine curvature and exact collinear controls
   const [collinear] = parsed('M0 0 Q1e308 1e308 5e307 5e307');
   assert.equal(collinear.straightSegments.length, 2);
 });
+
+test('canceled finite products retain exact quadratic curvature', () => {
+  const [curved] = parsed('M0 0 Q1.5430730396329725e308 0.019999999999999997 7.715365198164863e307 0.01');
+  assert.deepEqual(curved.straightSegments, []);
+  assert.equal(curved.segments.length, 8);
+  const [collinear] = parsed('M0 0 Q1.5430730396329725e308 0.02 7.715365198164863e307 0.01');
+  assert.equal(collinear.straightSegments.length, 2, 'the exact collinear reversal remains visible');
+});
