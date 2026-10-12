@@ -12,6 +12,30 @@ function failure(tokenOffset, reason, command, unsupported = false) {
   } };
 }
 
+// Keep source-exact decimal evidence separately from IEEE geometry. Bound
+// advisory BigInt work for extreme token spellings; unavailable evidence falls
+// back to the existing finite-coordinate and local-roundoff rules.
+function sourceDecimal(token) {
+  const [mantissa, exponent = '0'] = token.toLowerCase().split('e');
+  const [whole, fraction = ''] = mantissa.split('.');
+  const digits = (whole + fraction).replace(/^([+-]?)0+/, '$1');
+  const power = Number(exponent) - fraction.length;
+  if (digits.length > 4096 || !Number.isSafeInteger(power) || Math.abs(power) > 4096) return null;
+  return [BigInt(digits === '' || digits === '+' || digits === '-' ? '0' : digits), power];
+}
+function addSourceDecimal(a, b) {
+  if (!a || !b) return null;
+  const power = Math.min(a[1], b[1]);
+  return [a[0] * 10n ** BigInt(a[1] - power) + b[0] * 10n ** BigInt(b[1] - power), power];
+}
+function sourceCollinear(points) {
+  const parts = points.flat();
+  if (parts.some(part => !part)) return false;
+  const power = Math.min(...parts.map(([, exponent]) => exponent));
+  const [ax, ay, bx, by, cx, cy] = parts.map(([value, exponent]) => value * 10n ** BigInt(exponent - power));
+  return (bx - ax) * (cy - ay) === (by - ay) * (cx - ax);
+}
+
 function tokenize(source) {
   const tokens = [];
   let offset = 0;
@@ -34,7 +58,7 @@ function tokenize(source) {
     if (!number) return failure(offset, 'expected a number or supported path command');
     const value = Number(number[0]);
     if (!Number.isFinite(value)) return failure(offset, 'coordinate is not finite');
-    tokens.push({ kind: 'number', value, offset });
+    tokens.push({ kind: 'number', value, decimal: sourceDecimal(number[0]), offset });
     offset = NUMBER.lastIndex;
     comma = null;
   }
@@ -52,19 +76,24 @@ export function analyzeSvgPath(source) {
   let command = null;
   let commandOffset = 0;
   let current = [0, 0];
+  let currentDecimal = [[0n, 0], [0n, 0]];
+  let subpathDecimal;
   let subpath;
 
-  function move(point) {
+  function move(point, decimal = currentDecimal) {
     current = point;
+    currentDecimal = decimal;
+    subpathDecimal = decimal;
     subpath = { points: [point], segments: [], straightSegments: [], closed: false };
     subpaths.push(subpath);
   }
-  function line(point) {
+  function line(point, decimal) {
     const segment = { start: current, end: point };
     subpath.segments.push(segment);
     subpath.straightSegments.push(segment);
     subpath.points.push(point);
     current = point;
+    currentDecimal = decimal;
   }
 
   while (index < tokens.length) {
@@ -80,12 +109,13 @@ export function analyzeSvgPath(source) {
       return failure(commandOffset, 'path command is not supported by artifact analysis', command, true);
     }
     if (upper === 'Z') {
-      line(subpath.points[0]);
+      line(subpath.points[0], subpathDecimal);
       subpath.closed = true;
       command = null;
       continue;
     }
     const parameters = [];
+    const decimals = [];
     const parameterOffset = tokens[index]?.offset ?? source.length;
     for (let count = 0; count < ARITY[upper]; count += 1) {
       const token = tokens[index];
@@ -93,33 +123,48 @@ export function analyzeSvgPath(source) {
         return failure(token?.offset ?? source.length, `command ${command} requires ${ARITY[upper]} parameters`, command);
       }
       parameters.push(token.value);
+      decimals.push(token.decimal);
       index += 1;
     }
     const relative = command !== upper;
     const point = (x, y) => relative ? [current[0] + x, current[1] + y] : [x, y];
+    const decimalPoint = (x, y) => relative
+      ? [addSourceDecimal(currentDecimal[0], x), addSourceDecimal(currentDecimal[1], y)] : [x, y];
     let end;
     let control;
-    if (upper === 'H') end = [relative ? current[0] + parameters[0] : parameters[0], current[1]];
-    else if (upper === 'V') end = [current[0], relative ? current[1] + parameters[0] : parameters[0]];
+    let endDecimal;
+    let controlDecimal;
+    if (upper === 'H') {
+      end = [relative ? current[0] + parameters[0] : parameters[0], current[1]];
+      endDecimal = [relative ? addSourceDecimal(currentDecimal[0], decimals[0]) : decimals[0], currentDecimal[1]];
+    } else if (upper === 'V') {
+      end = [current[0], relative ? current[1] + parameters[0] : parameters[0]];
+      endDecimal = [currentDecimal[0], relative ? addSourceDecimal(currentDecimal[1], decimals[0]) : decimals[0]];
+    }
     else if (upper === 'Q') {
       control = point(parameters[0], parameters[1]);
       end = point(parameters[2], parameters[3]);
-    } else end = point(parameters[0], parameters[1]);
+      controlDecimal = decimalPoint(decimals[0], decimals[1]);
+      endDecimal = decimalPoint(decimals[2], decimals[3]);
+    } else {
+      end = point(parameters[0], parameters[1]);
+      endDecimal = decimalPoint(decimals[0], decimals[1]);
+    }
     if (![...end, ...(control || [])].every(Number.isFinite)) {
       return failure(parameterOffset, 'computed coordinate is not finite', command);
     }
     if (upper === 'M') {
-      move(end);
+      move(end, endDecimal);
       // moveto 后的额外参数组是 lineto，不能变成额外子路径。
       command = relative ? 'l' : 'L';
       continue;
     }
     if (subpath.closed) move(current);
-    if (upper !== 'Q') { line(end); continue; }
+    if (upper !== 'Q') { line(end, endDecimal); continue; }
 
     const start = current;
     const curvature = crossProductSign(start, control, end);
-    const collinear = curvature === 0 && collinearWithinRoundoff(start, control, end);
+    const collinear = curvature === 0 && collinearWithinRoundoff(start, control, end, sourceCollinear([currentDecimal, controlDecimal, endDecimal]));
     if (collinear) {
       // A collinear curve can reverse beyond its endpoints. Split at that
       // extremum so structural-border analysis sees the actual traced extent.
@@ -146,6 +191,7 @@ export function analyzeSvgPath(source) {
       current = next;
     }
     current = end;
+    currentDecimal = endDecimal;
   }
   return { ok: true, subpaths };
 }

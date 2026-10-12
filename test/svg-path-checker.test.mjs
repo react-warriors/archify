@@ -694,3 +694,16 @@ for (const [name, source] of [
     assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
   });
 }
+
+for (const [name, source] of [
+  ['absolute', 'M0 1000.12345678901234 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['relative', 'M0 1000.12345678901234 q300 .00370370367036 100 .00123456789012'],
+]) {
+  test(`public readable-v2 detects a crossing beyond decimal-authored reversal endpoints: ${name}`, async t => {
+    const result = await check(t, arrow(source) + arrow('M150 900 V1100', { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  });
+}

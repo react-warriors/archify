@@ -220,3 +220,32 @@ for (const [name, source, start, end] of [
     assert.equal(curve.segments.length, 8);
   });
 }
+
+for (const [name, source] of [
+  ['absolute', 'M0 1000.12345678901234 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['reversed', 'M100 1000.12469135690246 Q300 1000.12716049268270 0 1000.12345678901234'],
+  ['relative', 'M0 1000.12345678901234 q300 .00370370367036 100 .00123456789012'],
+  ['relative move', 'm0 1000.12345678901234 q300 .00370370367036 100 .00123456789012'],
+  ['horizontal start', 'M-10 1000.12345678901234 H0 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['vertical start', 'M0 0 V1000.12345678901234 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['closepath start', 'M0 1000.12345678901234 L1 1000.12345678901234 Z Q300 1000.12716049268270 100 1000.12469135690246'],
+]) {
+  test(`source decimal collinearity survives number conversion and path state: ${name}`, () => {
+    const curves = parsed(source);
+    const segments = curves.at(-1).straightSegments.slice(-2);
+    assert.equal(segments.length, 2);
+    assert.equal(segments[0].end[0], 180);
+    assert.deepEqual(segments[0].end, segments[1].start);
+  });
+}
+
+test('extreme decimal spellings keep bounded advisory evidence without rejecting finite geometry', () => {
+  for (const source of [
+    'M0 0 Q1e-1000000000 0 1 0',
+    `M0 0 Q0.${'0'.repeat(4200)}1 0 1 0`,
+  ]) {
+    const [curve] = parsed(source);
+    assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [1, 0] }]);
+    assert.equal(curve.segments.length, 8);
+  }
+});
