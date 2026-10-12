@@ -480,3 +480,29 @@ test('public readable-v2 retains curved classification when tiny quadratic offse
   assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
   assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
 });
+
+
+test('public readable-v2 preserves finite large curvature despite a small relative perpendicular delta', async t => {
+  const result = await check(t, arrow('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000.3'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+for (const [first, second] of [
+  ['M0 1e17 V1', 'M-1 3 H1'],
+  ['M-1 3 H1', 'M0 1e17 V1'],
+  ['M0 1 V1e17', 'M1 3 H-1'],
+  ['M1 3 H-1', 'M0 1 V1e17'],
+]) {
+  test(`public readable-v2 retains small intersection coordinates beside a long segment endpoint: ${first}`, async t => {
+    const result = await check(t, arrow(first) + arrow(second, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 3]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[0, 3\]/);
+  });
+}

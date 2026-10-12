@@ -133,10 +133,10 @@ export function analyzeSvgPath(source) {
     });
     const left = scaled[1][0] * scaled[2][1];
     const right = scaled[1][1] * scaled[2][0];
-    // Both normalized products may underflow even though the finite raw
-    // determinant establishes curvature beyond the existing tolerance.
-    const erasedCurvature = left === 0 && right === 0 && Number.isFinite(cross) && Math.abs(cross) > 1e-9;
-    const collinear = !erasedCurvature
+    // A small relative difference still represents curvature when its finite
+    // raw determinant exceeds the existing absolute tolerance.
+    const finiteCurvature = Number.isFinite(cross) && Math.abs(cross) > 1e-9;
+    const collinear = !finiteCurvature
       && Math.abs(left - right) <= 2 * Number.EPSILON * (Math.abs(left) + Math.abs(right));
     if (collinear) {
       // A collinear curve can reverse beyond its endpoints. Split at that

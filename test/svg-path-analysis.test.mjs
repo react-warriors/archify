@@ -155,3 +155,12 @@ test('non-collinear quadratic retains raw evidence when normalized control offse
   assert.equal(curve.segments.length, 8);
   assert.ok(curve.points.every(point => point.every(Number.isFinite)));
 });
+
+
+test('finite large curvature is not hidden by relative round-off allowance', () => {
+  const [curve] = parsed('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000.3');
+  assert.deepEqual(curve.straightSegments, []);
+  assert.equal(curve.segments.length, 8);
+  const [collinear] = parsed('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000');
+  assert.equal(collinear.straightSegments.length, 2, 'exact large collinearity still retains the reversal');
+});

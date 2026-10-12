@@ -1288,12 +1288,16 @@ function properSegmentIntersection(a, b, c, d) {
   if (denominator === 0 || Math.abs(denominator) < scaledEpsilon) return null;
   const ac = [sc[0] - sa[0], sc[1] - sa[1]];
   const amount = (ac[0] * cd[1] - ac[1] * cd[0]) / denominator;
-  if (!Number.isFinite(amount)) return null;
-  // Interpolate locally to retain translated short segments; use a convex
-  // combination if the unscaled difference overflows.
+  const otherAmount = (ac[0] * ab[1] - ac[1] * ab[0]) / denominator;
+  if (![amount, otherAmount].every(Number.isFinite)) return null;
+  // Use the smaller coordinate span on each axis: a long segment's parameter
+  // can round to an endpoint and erase a coordinate retained by the other line.
   return [0, 1].map(axis => {
-    const delta = b[axis] - a[axis];
-    return Number.isFinite(delta) ? a[axis] + amount * delta : (1 - amount) * a[axis] + amount * b[axis];
+    const useFirst = Math.abs(b[axis] - a[axis]) <= Math.abs(d[axis] - c[axis]);
+    const start = (useFirst ? a : c)[axis], end = (useFirst ? b : d)[axis];
+    const t = useFirst ? amount : otherAmount;
+    const delta = end - start;
+    return Number.isFinite(delta) ? start + t * delta : (1 - t) * start + t * end;
   });
 }
 
