@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import { analyzeSvgPath } from '../renderers/shared/svg-path-analysis.mjs';
+import { crossProductSign, exactProperIntersectionPoint } from '../renderers/shared/geometry-predicates.mjs';
 import { textUnits } from '../renderers/shared/utils.mjs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -317,7 +318,7 @@ if (svgMatches.length === 1) {
         code: 'composition/proper-crossing',
         relationship: relationshipRecord(hit.left),
         otherRelationship: relationshipRecord(hit.right),
-        point: hit.point.map((value) => Math.round(value * 10) / 10),
+        point: hit.point.map(roundedCoordinate),
       })),
       ...ambiguousCorridors.map((hit) => ({
         severity: corridorIsError ? 'error' : 'warning',
@@ -1031,8 +1032,13 @@ function frameRecord(frame) {
   return { kind: frame.kind, id: frame.id };
 }
 
+function roundedCoordinate(value) {
+  // At this magnitude the input already has much less than decimal precision.
+  return Math.abs(value) > Number.MAX_VALUE / 10 ? value : Math.round(value * 10) / 10;
+}
+
 function formatPoint(point) {
-  return point.map((value) => Math.round(value * 10) / 10).join(', ');
+  return point.map(roundedCoordinate).join(', ');
 }
 
 function lineSegments(attrs) {
@@ -1246,25 +1252,12 @@ function estimatedTextWidth(text, fontSize) {
 }
 
 function properSegmentIntersection(a, b, c, d) {
-  const abC = crossProduct(a, b, c);
-  const abD = crossProduct(a, b, d);
-  const cdA = crossProduct(c, d, a);
-  const cdB = crossProduct(c, d, b);
-  const epsilon = 1e-9;
-  const opposite = (left, right) => (left > epsilon && right < -epsilon) || (left < -epsilon && right > epsilon);
-  if (!opposite(abC, abD) || !opposite(cdA, cdB)) return null;
-  const denominator = (a[0] - b[0]) * (c[1] - d[1]) - (a[1] - b[1]) * (c[0] - d[0]);
-  if (Math.abs(denominator) < epsilon) return null;
-  const ab = a[0] * b[1] - a[1] * b[0];
-  const cd = c[0] * d[1] - c[1] * d[0];
-  return [
-    (ab * (c[0] - d[0]) - (a[0] - b[0]) * cd) / denominator,
-    (ab * (c[1] - d[1]) - (a[1] - b[1]) * cd) / denominator,
-  ];
-}
-
-function crossProduct(a, b, c) {
-  return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const opposite = (left, right) => left * right < 0;
+  if (!opposite(crossProductSign(a, b, c), crossProductSign(a, b, d))
+    || !opposite(crossProductSign(c, d, a), crossProductSign(c, d, b))) return null;
+  // Reconstruct coordinates exactly before rounding instead of interpolating
+  // rounded parameters, which can erase small endpoint coordinates.
+  return exactProperIntersectionPoint(a, b, c, d);
 }
 
 function segmentIntersectsBox(segment, box) {

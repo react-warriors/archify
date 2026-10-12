@@ -371,3 +371,339 @@ await import(${JSON.stringify(pathToFileURL(cli).href)});
   assert.ok(issue.supportedFixes.length > 0);
   assert.deepEqual(fs.readFileSync(output), previous);
 });
+
+test('readable-v2 detects a crossing beyond a backtracking quadratic endpoint', async t => {
+  const result = await check(t, arrow('M20 40 Q300 40 100 40')
+    + arrow('M150 20 V100', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.code, 1);
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.ok(result.receipt.composition.issues.some(item => item.code === 'composition/proper-crossing'
+    && item.point[0] === 150 && item.point[1] === 40));
+});
+
+test('readable-v2 retains crossings on a finite huge quadratic reversal', async t => {
+  const result = await check(t, arrow('M0 0 Q1e308 0 0 0')
+    + arrow('M4e307 -0.5 V0.5', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.code, 1);
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+  assert.ok(crossing, JSON.stringify(result.receipt.composition.issues));
+  assert.deepEqual(crossing.point, [4e307, 0], 'machine-readable evidence preserves the finite intersection');
+});
+
+for (const [curve, other, expectedX] of [
+  ['M0 .006 Q60 .009 20 .007', 'M30 -1 V1', 30],
+  ['M0 0 Q8e307 20 1e307 2.5', 'M8e306 1.5 V2.5', 8e306],
+]) {
+  test(`readable-v2 reports a finite crossing for ${curve}`, async t => {
+    const result = await check(t, arrow(curve)
+      + arrow(other, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.code, 1);
+    const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+    assert.ok(crossing, JSON.stringify(result.receipt.composition.issues));
+    assert.ok(crossing.point.every(Number.isFinite), JSON.stringify(crossing));
+    assert.ok(Math.abs(crossing.point[0] / expectedX - 1) < 1e-14);
+  });
+}
+
+for (const [name, first, second, expected] of [
+  ['underflowing normalized orientation', 'M0 0 H1e308', 'M5e307 -2e-317 V1e308', [5e307, 0]],
+  ['translated short segments', 'M100000000000000.2 100000000000000.23 H100000000000000.3',
+    'M100000000000000.28 100000000000000.27 L100000000000000.06 100000000000000.17', null],
+  ['translated quadratic reversal', 'M1000000 0 Q1000060 3 1000020 1', 'M1000030 1 V2', [1000030, 1.5]],
+]) {
+  test(`public readable-v2 check retains a finite crossing with ${name}`, async t => {
+    const result = await check(t, arrow(first) + arrow(second, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.code, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+    assert.ok(crossing, JSON.stringify(result.receipt.composition.issues));
+    assert.ok(crossing.point.every(Number.isFinite));
+    if (expected) assert.deepEqual(crossing.point, expected);
+    else {
+      assert.ok(crossing.point[0] >= 100000000000000.2 && crossing.point[0] <= 100000000000000.3);
+      assert.ok(Math.abs(crossing.point[1] - 100000000000000.23) < 0.125,
+        'public issue coordinates are rounded to tenths of a pixel');
+    }
+  });
+}
+
+test('public readable-v2 check retains orthogonality of a translated horizontal quadratic reversal', async t => {
+  const result = await check(t, arrow('M0 100000000000000 Q1 100000000000000 -3 100000000000000'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+test('underflow orientation fallback preserves the existing absolute crossing tolerance', async t => {
+  const result = await check(t, arrow('M0 0 H1e308')
+    + arrow('M5e307 -5e-318 V1e308', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, true);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 0);
+});
+
+test('public readable-v2 check does not invent a crossing from a non-collinear quadratic extremum', async t => {
+  const result = await check(t, arrow('M0 0 Q2000000000000000 1000000000000000 1000000000000000 500000000000001')
+    + arrow('M1000000000000000 500000000000000.1 V500000000000000.3', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, true);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 0);
+});
+
+
+test('public readable-v2 validates nonzero normalized orientation signs against finite raw evidence', async t => {
+  const result = await check(t, arrow('M-1 0 L1e-17 0')
+    + arrow('M-1e-17 1 L1 -1e17', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+  assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 0]);
+});
+
+test('public readable-v2 retains curved classification when tiny quadratic offsets underflow', async t => {
+  const result = await check(t, arrow('M0 0 Q1e-316 2e-316 1e308 1e308'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+
+test('public readable-v2 preserves finite large curvature despite a small relative perpendicular delta', async t => {
+  const result = await check(t, arrow('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000.3'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+for (const [first, second] of [
+  ['M0 1e17 V1', 'M-1 3 H1'],
+  ['M-1 3 H1', 'M0 1e17 V1'],
+  ['M0 1 V1e17', 'M1 3 H-1'],
+  ['M1 3 H-1', 'M0 1 V1e17'],
+]) {
+  test(`public readable-v2 retains small intersection coordinates beside a long segment endpoint: ${first}`, async t => {
+    const result = await check(t, arrow(first) + arrow(second, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 3]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[0, 3\]/);
+  });
+}
+
+
+test('public readable-v2 preserves curvature when both raw quadratic products overflow', async t => {
+  const result = await check(t, arrow('M0 0 Q1e308 1e308 5e307 5.000000000000001e307'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+const overflowScale = 2 ** 510;
+const overflowEndpointLines = [
+  [[0, 0], [3 * overflowScale, 18 * overflowScale]],
+  [[overflowScale, 6 * overflowScale], [-10 * overflowScale, -10 * overflowScale]],
+];
+function authoredLine([start, end], id) {
+  return `<line id="${id}" data-edge-id="${id}" data-edge-from="${id}-from" data-edge-to="${id}-to"
+    data-composition-route="straight" class="a-default" marker-end="url(#arrowhead)"
+    x1="${start[0]}" y1="${start[1]}" x2="${end[0]}" y2="${end[1]}"/>`;
+}
+for (const [name, lines] of [
+  ['original', overflowEndpointLines],
+  ['exchanged', [...overflowEndpointLines].reverse()],
+  ['reversed', overflowEndpointLines.map(line => [...line].reverse())],
+  ['exchanged and reversed', [...overflowEndpointLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 excludes exact overflowing endpoint touches: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assertPass(result);
+    assert.equal(result.receipt.composition.metrics.properCrossings, 0);
+  });
+}
+test('public readable-v2 still counts actual proper crossings when raw products overflow', async t => {
+  const second = [[overflowScale, 5 * overflowScale], [-10 * overflowScale, -10 * overflowScale]];
+  const result = await check(t, authoredLine(overflowEndpointLines[0], 'first') + authoredLine(second, 'second'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+  const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+  assert.ok(crossing.point.every(Number.isFinite));
+});
+
+const collapsedCrossingLines = [
+  [[0, 0], [4100, 4100]],
+  [[2306, 2306.0000000000005], [2306.0000000000005, 2306]],
+];
+for (const [name, lines] of [
+  ['original', collapsedCrossingLines],
+  ['exchanged', [...collapsedCrossingLines].reverse()],
+  ['long reversed', [[...collapsedCrossingLines[0]].reverse(), collapsedCrossingLines[1]]],
+  ['both reversed and exchanged', [...collapsedCrossingLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 retains a short proper crossing after endpoint normalization collapses: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [2306, 2306]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[2306, 2306\]/);
+  });
+}
+
+const subtractionOverflowLines = [
+  [[-1e308, -1e308], [1e308, 1e308]],
+  [[-1e308, 1e308], [1e308, -1e308]],
+];
+for (const [name, lines] of [
+  ['original', subtractionOverflowLines],
+  ['exchanged and reversed', [...subtractionOverflowLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 keeps healthy huge crossing interpolation finite: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 0]);
+  });
+}
+
+test('public readable-v2 preserves curvature when finite products cancel', async t => {
+  const result = await check(t, arrow('M0 0 Q1.5430730396329725e308 0.019999999999999997 7.715365198164863e307 0.01'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+const boundaryParameterLines = [
+  [[0, -2535473813651456], [4507997673881600, 1972523860230144]],
+  [[2535473813651456, 0.5], [2535473813651456.5, -50]],
+];
+for (const [name, lines] of [
+  ['original', boundaryParameterLines],
+  ['exchanged', [...boundaryParameterLines].reverse()],
+  ['long reversed', [[...boundaryParameterLines[0]].reverse(), boundaryParameterLines[1]]],
+  ['both reversed and exchanged', [...boundaryParameterLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 retains actual coordinates when normalized parameters round to a boundary: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point,
+      [2535473813651456, 0]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'),
+      /\[2535473813651456, 0\]/);
+  });
+}
+
+for (const [name, curve, other, point] of [
+  ['horizontal', 'M-1e308 0 Q1e291 0 0 0', 'M5e273 -20 V20', [5e273, 0]],
+  ['horizontal reversed', 'M0 0 Q1e291 0 -1e308 0', 'M5e273 -20 V20', [5e273, 0]],
+  ['vertical', 'M0 -1e308 Q0 1e291 0 0', 'M-20 5e273 H20', [0, 5e273]],
+  ['vertical reversed', 'M0 0 Q0 1e291 0 -1e308', 'M-20 5e273 H20', [0, 5e273]],
+]) {
+  test(`public readable-v2 detects a crossing inside a quadratic endpoint-rounding excursion: ${name}`, async t => {
+    const result = await check(t, arrow(curve)
+      + arrow(other, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.code, 1);
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, point);
+  });
+}
+
+const roundedIntersectionLines = [
+  [[-1e17, 3], [4, 3]],
+  [[4, 2], [-1e17, 1e17]],
+];
+for (const [name, lines] of [
+  ['original', roundedIntersectionLines],
+  ['exchanged', [...roundedIntersectionLines].reverse()],
+  ['first reversed', [[...roundedIntersectionLines[0]].reverse(), roundedIntersectionLines[1]]],
+  ['both reversed and exchanged', [...roundedIntersectionLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 rounds exact crossing coordinates once instead of interpolating rounded parameters: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [3, 3]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[3, 3\]/);
+  });
+}
+
+test('public readable-v2 preserves a tolerated horizontal chord when normalized endpoint underflows', async t => {
+  const result = await check(t, arrow('M0 0 Q1e308 1 1e-16 0'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+test('public readable-v2 detects the translated decimal reversal crossing', async t => {
+  const result = await check(t, arrow('M2200.5 71.8 Q2432 -30.7 2246.8 51.3')
+    + arrow('M2293.1 29.8 V31.8', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [2293.1, 30.8]);
+});
+
+for (const [name, source] of [
+  ['local', 'M0 0 Q100 .03125 1.4901161193847656e-8 0'],
+  ['translated', 'M67108864 0 Q67108964 .03125 67108864.00000001490116119384765625 0'],
+  ['translated reversed', 'M67108864.00000001490116119384765625 0 Q67108964 .03125 67108864 0'],
+]) {
+  test(`public readable-v2 preserves tolerated chord acceptance after exact translation: ${name}`, async t => {
+    const result = await check(t, arrow(source), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+  });
+}
+
+for (const [name, source] of [
+  ['absolute', 'M0 1000.12345678901234 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['relative', 'M0 1000.12345678901234 q300 .00370370367036 100 .00123456789012'],
+]) {
+  test(`public readable-v2 detects a crossing beyond decimal-authored reversal endpoints: ${name}`, async t => {
+    const result = await check(t, arrow(source) + arrow('M150 900 V1100', { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  });
+}

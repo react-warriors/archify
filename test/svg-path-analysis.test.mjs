@@ -88,3 +88,164 @@ for (const command of ['A', 'a', 'C', 'c', 'S', 's', 'T', 't']) {
     assert.equal(result.error.tokenOffset, 7);
   });
 }
+
+test('backtracking quadratic curves do not masquerade as straight frame edges', () => {
+  for (const source of ['M0 0 Q40 0 10 0', 'M10 0 Q-30 0 0 0', 'M0 0 Q40 0 0 0', 'M0 0 Q0 40 0 10']) {
+    const [curve] = parsed(source);
+    assert.equal(curve.straightSegments.length, 2);
+    const [outbound, returning] = curve.straightSegments;
+    assert.deepEqual(outbound.start, curve.points[0]);
+    assert.deepEqual(returning.end, curve.points.at(-1));
+    assert.deepEqual(outbound.end, returning.start);
+    assert.ok(Math.max(Math.abs(outbound.end[0]), Math.abs(outbound.end[1])) > 10);
+    assert.equal(curve.segments.length, 8);
+    assert.ok(curve.points.some(point => Math.max(Math.abs(point[0]), Math.abs(point[1])) > 10));
+  }
+});
+
+test('finite huge collinear quadratic retains its actual reversal', () => {
+  const [curve] = parsed('M0 0 Q1e308 0 0 0');
+  assert.deepEqual(curve.straightSegments, [
+    { start: [0, 0], end: [5e307, 0] }, { start: [5e307, 0], end: [0, 0] },
+  ]);
+  assert.ok(curve.points.every(point => point.every(Number.isFinite)));
+});
+
+test('near-collinear quadratic preserves the tolerated chord without inventing straight reversals', () => {
+  const [curve] = parsed('M0 0 Q300 0.001 0.000001 0');
+  assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [0.000001, 0] }]);
+  assert.ok(curve.points.some(point => point[1] > 0));
+});
+
+for (const source of ['M0 .006 Q60 .009 20 .007', 'M0 0 Q8e307 20 1e307 2.5']) {
+  test(`collinear reversal survives decimal round-off or overflowing products: ${source}`, () => {
+    const [curve] = parsed(source);
+    assert.equal(curve.straightSegments.length, 2);
+    assert.ok(curve.straightSegments.every(segment => [...segment.start, ...segment.end].every(Number.isFinite)));
+    assert.ok(curve.straightSegments[0].end[0] > curve.points.at(-1)[0]);
+  });
+}
+
+test('translated collinear quadratic keeps its reversal in the local coordinate frame', () => {
+  const [curve] = parsed('M1000000 0 Q1000060 3 1000020 1');
+  assert.deepEqual(curve.straightSegments, [
+    { start: [1000000, 0], end: [1000036, 1.8] },
+    { start: [1000036, 1.8], end: [1000020, 1] },
+  ]);
+});
+
+test('a constant translated quadratic axis stays exactly constant at its turning point', () => {
+  const [curve] = parsed('M0 100000000000000 Q1 100000000000000 -3 100000000000000');
+  assert.equal(curve.straightSegments.length, 2);
+  assert.ok(curve.straightSegments.every(segment => segment.start[1] === 100000000000000
+    && segment.end[1] === 100000000000000));
+  assert.equal(curve.straightSegments[0].end[0], 0.2);
+});
+
+test('round-off allowance does not split a genuinely non-collinear huge quadratic', () => {
+  const [curve] = parsed('M0 0 Q2000000000000000 1000000000000000 1000000000000000 500000000000001');
+  assert.deepEqual(curve.straightSegments, []);
+  assert.equal(curve.segments.length, 8, 'the existing sampled curve remains available');
+});
+
+
+test('non-collinear quadratic retains raw evidence when normalized control offsets underflow', () => {
+  const [curve] = parsed('M0 0 Q1e-316 2e-316 1e308 1e308');
+  assert.deepEqual(curve.straightSegments, []);
+  assert.equal(curve.segments.length, 8);
+  assert.ok(curve.points.every(point => point.every(Number.isFinite)));
+});
+
+
+test('finite large curvature is not hidden by relative round-off allowance', () => {
+  const [curve] = parsed('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000.3');
+  assert.deepEqual(curve.straightSegments, []);
+  assert.equal(curve.segments.length, 8);
+  const [collinear] = parsed('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000');
+  assert.equal(collinear.straightSegments.length, 2, 'exact large collinearity still retains the reversal');
+});
+
+
+test('overflowing products retain genuine curvature and exact collinear controls', () => {
+  const [curved] = parsed('M0 0 Q1e308 1e308 5e307 5.000000000000001e307');
+  assert.deepEqual(curved.straightSegments, []);
+  assert.equal(curved.segments.length, 8);
+  const [collinear] = parsed('M0 0 Q1e308 1e308 5e307 5e307');
+  assert.equal(collinear.straightSegments.length, 2);
+});
+
+test('canceled finite products retain exact quadratic curvature', () => {
+  const [curved] = parsed('M0 0 Q1.5430730396329725e308 0.019999999999999997 7.715365198164863e307 0.01');
+  assert.deepEqual(curved.straightSegments, []);
+  assert.equal(curved.segments.length, 8);
+  const [collinear] = parsed('M0 0 Q1.5430730396329725e308 0.02 7.715365198164863e307 0.01');
+  assert.equal(collinear.straightSegments.length, 2, 'the exact collinear reversal remains visible');
+});
+
+for (const [name, source, vertex] of [
+  ['horizontal', 'M-1e308 0 Q1e291 0 0 0', [1e274, 0]],
+  ['horizontal reversed', 'M0 0 Q1e291 0 -1e308 0', [1e274, 0]],
+  ['vertical', 'M0 -1e308 Q0 1e291 0 0', [0, 1e274]],
+  ['vertical reversed', 'M0 0 Q0 1e291 0 -1e308', [0, 1e274]],
+]) {
+  test(`collinear quadratic retains its exact excursion when the turning parameter rounds to an endpoint: ${name}`, () => {
+    const [curve] = parsed(source);
+    assert.equal(curve.straightSegments.length, 2);
+    assert.deepEqual(curve.straightSegments[0].end, vertex);
+    assert.deepEqual(curve.straightSegments[1].start, vertex);
+    assert.ok(curve.straightSegments.every(segment => [...segment.start, ...segment.end].every(Number.isFinite)));
+    assert.equal(curve.segments.length, 8, 'the existing sampled path contract remains unchanged');
+  });
+}
+
+test('tolerated curvature with an underflowing normalized endpoint retains only its chord', () => {
+  const [curve] = parsed('M0 0 Q1e308 1 1e-16 0');
+  assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [1e-16, 0] }]);
+});
+
+test('translated decimal collinear reversal includes subtraction round-off', () => {
+  const [curve] = parsed('M2200.5 71.8 Q2432 -30.7 2246.8 51.3');
+  assert.equal(curve.straightSegments.length, 2);
+  assert.ok(curve.straightSegments[0].end[0] > 2329);
+});
+
+for (const [name, source, start, end] of [
+  ['local', 'M0 0 Q100 .03125 1.4901161193847656e-8 0', [0, 0], [2 ** -26, 0]],
+  ['translated', 'M67108864 0 Q67108964 .03125 67108864.00000001490116119384765625 0', [2 ** 26, 0], [2 ** 26 + 2 ** -26, 0]],
+  ['translated reversed', 'M67108864.00000001490116119384765625 0 Q67108964 .03125 67108864 0', [2 ** 26 + 2 ** -26, 0], [2 ** 26, 0]],
+]) {
+  test(`exact translation does not turn tolerated curvature into reversal segments: ${name}`, () => {
+    const [curve] = parsed(source);
+    assert.deepEqual(curve.straightSegments, [{ start, end }]);
+    assert.equal(curve.segments.length, 8);
+  });
+}
+
+for (const [name, source] of [
+  ['absolute', 'M0 1000.12345678901234 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['reversed', 'M100 1000.12469135690246 Q300 1000.12716049268270 0 1000.12345678901234'],
+  ['relative', 'M0 1000.12345678901234 q300 .00370370367036 100 .00123456789012'],
+  ['relative move', 'm0 1000.12345678901234 q300 .00370370367036 100 .00123456789012'],
+  ['horizontal start', 'M-10 1000.12345678901234 H0 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['vertical start', 'M0 0 V1000.12345678901234 Q300 1000.12716049268270 100 1000.12469135690246'],
+  ['closepath start', 'M0 1000.12345678901234 L1 1000.12345678901234 Z Q300 1000.12716049268270 100 1000.12469135690246'],
+]) {
+  test(`source decimal collinearity survives number conversion and path state: ${name}`, () => {
+    const curves = parsed(source);
+    const segments = curves.at(-1).straightSegments.slice(-2);
+    assert.equal(segments.length, 2);
+    assert.equal(segments[0].end[0], 180);
+    assert.deepEqual(segments[0].end, segments[1].start);
+  });
+}
+
+test('extreme decimal spellings keep bounded advisory evidence without rejecting finite geometry', () => {
+  for (const source of [
+    'M0 0 Q1e-1000000000 0 1 0',
+    `M0 0 Q0.${'0'.repeat(4200)}1 0 1 0`,
+  ]) {
+    const [curve] = parsed(source);
+    assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [1, 0] }]);
+    assert.equal(curve.segments.length, 8);
+  }
+});
