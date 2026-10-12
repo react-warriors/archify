@@ -147,3 +147,11 @@ test('round-off allowance does not split a genuinely non-collinear huge quadrati
   assert.deepEqual(curve.straightSegments, []);
   assert.equal(curve.segments.length, 8, 'the existing sampled curve remains available');
 });
+
+
+test('non-collinear quadratic retains raw evidence when normalized control offsets underflow', () => {
+  const [curve] = parsed('M0 0 Q1e-316 2e-316 1e308 1e308');
+  assert.deepEqual(curve.straightSegments, []);
+  assert.equal(curve.segments.length, 8);
+  assert.ok(curve.points.every(point => point.every(Number.isFinite)));
+});

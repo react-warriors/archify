@@ -1267,12 +1267,13 @@ function properSegmentIntersection(a, b, c, d) {
   const scaledEpsilon = epsilon / Math.max(...scales) / Math.min(...scales);
   const orientation = (first, second, third, rawFirst, rawSecond, rawThird) => {
     const normalized = crossProduct(first, second, third);
-    if (normalized !== 0) return normalized;
-    // Independent scaling can underflow a tiny, significant component to
-    // zero. Retain its raw sign only beyond the existing absolute tolerance.
+    // Global normalization can erase a small separation or round its sign
+    // incorrectly. Finite raw evidence preserves the absolute tolerance and
+    // validates either a zero or a nonzero normalized orientation.
     const raw = crossProduct(rawFirst, rawSecond, rawThird);
-    return Number.isFinite(raw) && Math.abs(raw) > epsilon
-      ? Math.sign(raw) * Math.max(Number.MIN_VALUE, 2 * scaledEpsilon) : 0;
+    if (Number.isFinite(raw)) return Math.abs(raw) > epsilon
+      ? Math.sign(raw) * Math.max(Math.abs(normalized), Number.MIN_VALUE, 2 * scaledEpsilon) : 0;
+    return normalized;
   };
   const abC = orientation(sa, sb, sc, a, b, c);
   const abD = orientation(sa, sb, sd, a, b, d);

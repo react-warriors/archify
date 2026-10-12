@@ -461,3 +461,22 @@ test('public readable-v2 check does not invent a crossing from a non-collinear q
   assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, true);
   assert.equal(result.receipt.composition.metrics.properCrossings, 0);
 });
+
+
+test('public readable-v2 validates nonzero normalized orientation signs against finite raw evidence', async t => {
+  const result = await check(t, arrow('M-1 0 L1e-17 0')
+    + arrow('M-1e-17 1 L1 -1e17', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+  assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 0]);
+});
+
+test('public readable-v2 retains curved classification when tiny quadratic offsets underflow', async t => {
+  const result = await check(t, arrow('M0 0 Q1e-316 2e-316 1e308 1e308'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
