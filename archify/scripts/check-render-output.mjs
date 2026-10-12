@@ -2,7 +2,7 @@
 
 import fs from 'node:fs';
 import { analyzeSvgPath } from '../renderers/shared/svg-path-analysis.mjs';
-import { crossProductSign } from '../renderers/shared/geometry-predicates.mjs';
+import { crossProductSign, exactProperIntersectionAmounts } from '../renderers/shared/geometry-predicates.mjs';
 import { textUnits } from '../renderers/shared/utils.mjs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -1283,11 +1283,13 @@ function properSegmentIntersection(a, b, c, d) {
   const ab = [sb[0] - sa[0], sb[1] - sa[1]];
   const cd = [sd[0] - sc[0], sd[1] - sc[1]];
   const denominator = ab[0] * cd[1] - ab[1] * cd[0];
-  if (denominator === 0 || Math.abs(denominator) < scaledEpsilon) return null;
   const ac = [sc[0] - sa[0], sc[1] - sa[1]];
-  const amount = (ac[0] * cd[1] - ac[1] * cd[0]) / denominator;
-  const otherAmount = (ac[0] * ab[1] - ac[1] * ab[0]) / denominator;
-  if (![amount, otherAmount].every(Number.isFinite)) return null;
+  let amounts = denominator === 0 || Math.abs(denominator) < scaledEpsilon
+    ? null
+    : [(ac[0] * cd[1] - ac[1] * cd[0]) / denominator, (ac[0] * ab[1] - ac[1] * ab[0]) / denominator];
+  if (!amounts || !amounts.every(Number.isFinite)) amounts = exactProperIntersectionAmounts(a, b, c, d);
+  if (!amounts) return null;
+  const [amount, otherAmount] = amounts;
   // Use the smaller coordinate span on each axis: a long segment's parameter
   // can round to an endpoint and erase a coordinate retained by the other line.
   return [0, 1].map(axis => {

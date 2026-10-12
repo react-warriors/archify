@@ -550,3 +550,44 @@ test('public readable-v2 still counts actual proper crossings when raw products 
   const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
   assert.ok(crossing.point.every(Number.isFinite));
 });
+
+const collapsedCrossingLines = [
+  [[0, 0], [4100, 4100]],
+  [[2306, 2306.0000000000005], [2306.0000000000005, 2306]],
+];
+for (const [name, lines] of [
+  ['original', collapsedCrossingLines],
+  ['exchanged', [...collapsedCrossingLines].reverse()],
+  ['long reversed', [[...collapsedCrossingLines[0]].reverse(), collapsedCrossingLines[1]]],
+  ['both reversed and exchanged', [...collapsedCrossingLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 retains a short proper crossing after endpoint normalization collapses: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [2306, 2306]);
+    assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[2306, 2306\]/);
+  });
+}
+
+const subtractionOverflowLines = [
+  [[-1e308, -1e308], [1e308, 1e308]],
+  [[-1e308, 1e308], [1e308, -1e308]],
+];
+for (const [name, lines] of [
+  ['original', subtractionOverflowLines],
+  ['exchanged and reversed', [...subtractionOverflowLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 keeps healthy huge crossing interpolation finite: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+    assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [0, 0]);
+  });
+}
