@@ -208,3 +208,15 @@ test('translated decimal collinear reversal includes subtraction round-off', () 
   assert.equal(curve.straightSegments.length, 2);
   assert.ok(curve.straightSegments[0].end[0] > 2329);
 });
+
+for (const [name, source, start, end] of [
+  ['local', 'M0 0 Q100 .03125 1.4901161193847656e-8 0', [0, 0], [2 ** -26, 0]],
+  ['translated', 'M67108864 0 Q67108964 .03125 67108864.00000001490116119384765625 0', [2 ** 26, 0], [2 ** 26 + 2 ** -26, 0]],
+  ['translated reversed', 'M67108864.00000001490116119384765625 0 Q67108964 .03125 67108864 0', [2 ** 26 + 2 ** -26, 0], [2 ** 26, 0]],
+]) {
+  test(`exact translation does not turn tolerated curvature into reversal segments: ${name}`, () => {
+    const [curve] = parsed(source);
+    assert.deepEqual(curve.straightSegments, [{ start, end }]);
+    assert.equal(curve.segments.length, 8);
+  });
+}

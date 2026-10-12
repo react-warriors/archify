@@ -680,3 +680,17 @@ test('public readable-v2 detects the translated decimal reversal crossing', asyn
   assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
   assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [2293.1, 30.8]);
 });
+
+for (const [name, source] of [
+  ['local', 'M0 0 Q100 .03125 1.4901161193847656e-8 0'],
+  ['translated', 'M67108864 0 Q67108964 .03125 67108864.00000001490116119384765625 0'],
+  ['translated reversed', 'M67108864.00000001490116119384765625 0 Q67108964 .03125 67108864 0'],
+]) {
+  test(`public readable-v2 preserves tolerated chord acceptance after exact translation: ${name}`, async t => {
+    const result = await check(t, arrow(source), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+    assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+  });
+}

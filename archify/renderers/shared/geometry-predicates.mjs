@@ -41,22 +41,33 @@ export function crossProductSign(a, b, c) {
   return magnitude > tolerance ? (determinant > 0n ? 1 : -1) : 0;
 }
 
+// Shortest decimal coordinates retain exact-zero evidence for decimal-authored
+// lines. This does not recover the original SVG spelling or relax the absolute
+// curvature tolerance applied by the caller.
+function canonicalDecimalCollinear(a, b, c) {
+  const parts = [a, b, c].flat().map(value => {
+    const [mantissa, exponent = '0'] = String(value).split('e');
+    const [whole, fraction = ''] = mantissa.split('.');
+    return [BigInt(whole + fraction), Number(exponent) - fraction.length];
+  });
+  const power = Math.min(...parts.map(([, exponent]) => exponent));
+  const [ax, ay, bx, by, cx, cy] = parts.map(([value, exponent]) => value * 10n ** BigInt(exponent - power));
+  return (bx - ax) * (cy - ay) === (by - ay) * (cx - ax);
+}
+
 // Compare relative collinearity without scaling nonzero offsets/products to
-// zero. Include coordinate representation error before origin subtraction;
-// translated decimal points can lose more than two product ulps in that step.
-// The caller also applies the existing absolute curvature tolerance.
+// zero. Local product round-off cannot grow merely because of translation.
+// Canonical decimal exact-zero evidence also preserves decimal-authored lines.
+// The caller separately enforces the existing absolute curvature tolerance.
 export function collinearWithinRoundoff(a, b, c) {
   const exact = exactCoordinates([a, b, c]);
   if (!exact) return false;
   const [ax, ay, bx, by, cx, cy] = exact.coordinates;
   const abs = value => value < 0n ? -value : value;
   const ux = bx - ax, uy = by - ay, vx = cx - ax, vy = cy - ay;
-  const determinant = ux * vy - uy * vx;
-  const bound = (abs(bx) + abs(ax)) * abs(vy)
-    + (abs(cy) + abs(ay)) * abs(ux)
-    + (abs(by) + abs(ay)) * abs(vx)
-    + (abs(cx) + abs(ax)) * abs(uy);
-  return (abs(determinant) << 52n) <= bound;
+  const left = ux * vy, right = uy * vx;
+  return (abs(left - right) << 51n) <= abs(left) + abs(right)
+    || canonicalDecimalCollinear(a, b, c);
 }
 
 // Round a signed rational times a binary power once, to nearest, ties-even.
