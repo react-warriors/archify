@@ -506,3 +506,47 @@ for (const [first, second] of [
     assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[0, 3\]/);
   });
 }
+
+
+test('public readable-v2 preserves curvature when both raw quadratic products overflow', async t => {
+  const result = await check(t, arrow('M0 0 Q1e308 1e308 5e307 5.000000000000001e307'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+const overflowScale = 2 ** 510;
+const overflowEndpointLines = [
+  [[0, 0], [3 * overflowScale, 18 * overflowScale]],
+  [[overflowScale, 6 * overflowScale], [-10 * overflowScale, -10 * overflowScale]],
+];
+function authoredLine([start, end], id) {
+  return `<line id="${id}" data-edge-id="${id}" data-edge-from="${id}-from" data-edge-to="${id}-to"
+    data-composition-route="straight" class="a-default" marker-end="url(#arrowhead)"
+    x1="${start[0]}" y1="${start[1]}" x2="${end[0]}" y2="${end[1]}"/>`;
+}
+for (const [name, lines] of [
+  ['original', overflowEndpointLines],
+  ['exchanged', [...overflowEndpointLines].reverse()],
+  ['reversed', overflowEndpointLines.map(line => [...line].reverse())],
+  ['exchanged and reversed', [...overflowEndpointLines].reverse().map(line => [...line].reverse())],
+]) {
+  test(`public readable-v2 excludes exact overflowing endpoint touches: ${name}`, async t => {
+    const result = await check(t, lines.map((line, i) => authoredLine(line, `line-${i}`)).join(''), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assertPass(result);
+    assert.equal(result.receipt.composition.metrics.properCrossings, 0);
+  });
+}
+test('public readable-v2 still counts actual proper crossings when raw products overflow', async t => {
+  const second = [[overflowScale, 5 * overflowScale], [-10 * overflowScale, -10 * overflowScale]];
+  const result = await check(t, authoredLine(overflowEndpointLines[0], 'first') + authoredLine(second, 'second'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+  const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+  assert.ok(crossing.point.every(Number.isFinite));
+});

@@ -164,3 +164,12 @@ test('finite large curvature is not hidden by relative round-off allowance', () 
   const [collinear] = parsed('M0 0 Q1000000000000000 1000000000000000 500000000000000 500000000000000');
   assert.equal(collinear.straightSegments.length, 2, 'exact large collinearity still retains the reversal');
 });
+
+
+test('overflowing products retain genuine curvature and exact collinear controls', () => {
+  const [curved] = parsed('M0 0 Q1e308 1e308 5e307 5.000000000000001e307');
+  assert.deepEqual(curved.straightSegments, []);
+  assert.equal(curved.segments.length, 8);
+  const [collinear] = parsed('M0 0 Q1e308 1e308 5e307 5e307');
+  assert.equal(collinear.straightSegments.length, 2);
+});

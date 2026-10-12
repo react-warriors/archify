@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import { analyzeSvgPath } from '../renderers/shared/svg-path-analysis.mjs';
+import { crossProductSign } from '../renderers/shared/geometry-predicates.mjs';
 import { textUnits } from '../renderers/shared/utils.mjs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -1267,13 +1268,10 @@ function properSegmentIntersection(a, b, c, d) {
   const scaledEpsilon = epsilon / Math.max(...scales) / Math.min(...scales);
   const orientation = (first, second, third, rawFirst, rawSecond, rawThird) => {
     const normalized = crossProduct(first, second, third);
-    // Global normalization can erase a small separation or round its sign
-    // incorrectly. Finite raw evidence preserves the absolute tolerance and
-    // validates either a zero or a nonzero normalized orientation.
-    const raw = crossProduct(rawFirst, rawSecond, rawThird);
-    if (Number.isFinite(raw)) return Math.abs(raw) > epsilon
-      ? Math.sign(raw) * Math.max(Math.abs(normalized), Number.MIN_VALUE, 2 * scaledEpsilon) : 0;
-    return normalized;
+    // Validate normalized round-off against finite raw evidence, or an exact
+    // determinant when products overflow, at the existing absolute tolerance.
+    const sign = crossProductSign(rawFirst, rawSecond, rawThird);
+    return sign ? sign * Math.max(Math.abs(normalized), Number.MIN_VALUE, 2 * scaledEpsilon) : 0;
   };
   const abC = orientation(sa, sb, sc, a, b, c);
   const abD = orientation(sa, sb, sd, a, b, d);

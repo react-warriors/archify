@@ -1,3 +1,5 @@
+import { crossProductSign } from './geometry-predicates.mjs';
+
 // 仅分析静态检查器需要的路径子集，不作为通用 SVG 渲染器。
 const NUMBER = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/y;
 const COMMANDS = /^[MLHVQZACSTmlhvqzacst]$/;
@@ -133,10 +135,10 @@ export function analyzeSvgPath(source) {
     });
     const left = scaled[1][0] * scaled[2][1];
     const right = scaled[1][1] * scaled[2][0];
-    // A small relative difference still represents curvature when its finite
-    // raw determinant exceeds the existing absolute tolerance.
-    const finiteCurvature = Number.isFinite(cross) && Math.abs(cross) > 1e-9;
-    const collinear = !finiteCurvature
+    // Relative round-off cannot hide curvature above the absolute tolerance,
+    // including cases whose raw products overflow.
+    const curvature = crossProductSign(start, control, end);
+    const collinear = curvature === 0
       && Math.abs(left - right) <= 2 * Number.EPSILON * (Math.abs(left) + Math.abs(right));
     if (collinear) {
       // A collinear curve can reverse beyond its endpoints. Split at that
