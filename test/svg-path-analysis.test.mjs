@@ -125,3 +125,25 @@ for (const source of ['M0 .006 Q60 .009 20 .007', 'M0 0 Q8e307 20 1e307 2.5']) {
     assert.ok(curve.straightSegments[0].end[0] > curve.points.at(-1)[0]);
   });
 }
+
+test('translated collinear quadratic keeps its reversal in the local coordinate frame', () => {
+  const [curve] = parsed('M1000000 0 Q1000060 3 1000020 1');
+  assert.deepEqual(curve.straightSegments, [
+    { start: [1000000, 0], end: [1000036, 1.8] },
+    { start: [1000036, 1.8], end: [1000020, 1] },
+  ]);
+});
+
+test('a constant translated quadratic axis stays exactly constant at its turning point', () => {
+  const [curve] = parsed('M0 100000000000000 Q1 100000000000000 -3 100000000000000');
+  assert.equal(curve.straightSegments.length, 2);
+  assert.ok(curve.straightSegments.every(segment => segment.start[1] === 100000000000000
+    && segment.end[1] === 100000000000000));
+  assert.equal(curve.straightSegments[0].end[0], 0.2);
+});
+
+test('round-off allowance does not split a genuinely non-collinear huge quadratic', () => {
+  const [curve] = parsed('M0 0 Q2000000000000000 1000000000000000 1000000000000000 500000000000001');
+  assert.deepEqual(curve.straightSegments, []);
+  assert.equal(curve.segments.length, 8, 'the existing sampled curve remains available');
+});

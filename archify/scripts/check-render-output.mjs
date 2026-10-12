@@ -1252,25 +1252,48 @@ function estimatedTextWidth(text, fontSize) {
 
 function properSegmentIntersection(a, b, c, d) {
   const epsilon = 1e-9;
-  const scales = [0, 1].map(axis => Math.max(...[a, b, c, d].map(point => Math.abs(point[axis]))) || 1);
-  const [sa, sb, sc, sd] = [a, b, c, d].map(point => point.map((value, axis) => value / scales[axis]));
-  const scaledEpsilon = epsilon / scales[0] / scales[1];
-  const abC = crossProduct(sa, sb, sc);
-  const abD = crossProduct(sa, sb, sd);
-  const cdA = crossProduct(sc, sd, sa);
-  const cdB = crossProduct(sc, sd, sb);
+  const points = [a, b, c, d];
+  const scaled = points.map(() => []);
+  const scales = [0, 1].map(axis => {
+    const offsets = points.map(point => point[axis] - a[axis]);
+    const finite = offsets.every(Number.isFinite);
+    const scale = Math.max(...(finite ? offsets : points.map(point => point[axis])).map(Math.abs)) || 1;
+    for (let index = 0; index < points.length; index += 1) {
+      scaled[index][axis] = finite ? offsets[index] / scale : points[index][axis] / scale - a[axis] / scale;
+    }
+    return scale;
+  });
+  const [sa, sb, sc, sd] = scaled;
+  const scaledEpsilon = epsilon / Math.max(...scales) / Math.min(...scales);
+  const orientation = (first, second, third, rawFirst, rawSecond, rawThird) => {
+    const normalized = crossProduct(first, second, third);
+    if (normalized !== 0) return normalized;
+    // Independent scaling can underflow a tiny, significant component to
+    // zero. Retain its raw sign only beyond the existing absolute tolerance.
+    const raw = crossProduct(rawFirst, rawSecond, rawThird);
+    return Number.isFinite(raw) && Math.abs(raw) > epsilon
+      ? Math.sign(raw) * Math.max(Number.MIN_VALUE, 2 * scaledEpsilon) : 0;
+  };
+  const abC = orientation(sa, sb, sc, a, b, c);
+  const abD = orientation(sa, sb, sd, a, b, d);
+  const cdA = orientation(sc, sd, sa, c, d, a);
+  const cdB = orientation(sc, sd, sb, c, d, b);
   const opposite = (left, right) => (left > scaledEpsilon && right < -scaledEpsilon) || (left < -scaledEpsilon && right > scaledEpsilon);
   if (!opposite(abC, abD) || !opposite(cdA, cdB)) return null;
 
   const ab = [sb[0] - sa[0], sb[1] - sa[1]];
   const cd = [sd[0] - sc[0], sd[1] - sc[1]];
   const denominator = ab[0] * cd[1] - ab[1] * cd[0];
-  if (Math.abs(denominator) < scaledEpsilon) return null;
+  if (denominator === 0 || Math.abs(denominator) < scaledEpsilon) return null;
   const ac = [sc[0] - sa[0], sc[1] - sa[1]];
   const amount = (ac[0] * cd[1] - ac[1] * cd[0]) / denominator;
-  // A proper intersection lies inside the segment. Interpolate normalized
-  // coordinates, avoiding overflowing products in the line determinant.
-  return [0, 1].map(axis => ((1 - amount) * sa[axis] + amount * sb[axis]) * scales[axis]);
+  if (!Number.isFinite(amount)) return null;
+  // Interpolate locally to retain translated short segments; use a convex
+  // combination if the unscaled difference overflows.
+  return [0, 1].map(axis => {
+    const delta = b[axis] - a[axis];
+    return Number.isFinite(delta) ? a[axis] + amount * delta : (1 - amount) * a[axis] + amount * b[axis];
+  });
 }
 
 function crossProduct(a, b, c) {

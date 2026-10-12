@@ -411,3 +411,53 @@ for (const [curve, other, expectedX] of [
     assert.ok(Math.abs(crossing.point[0] / expectedX - 1) < 1e-14);
   });
 }
+
+for (const [name, first, second, expected] of [
+  ['underflowing normalized orientation', 'M0 0 H1e308', 'M5e307 -2e-317 V1e308', [5e307, 0]],
+  ['translated short segments', 'M100000000000000.2 100000000000000.23 H100000000000000.3',
+    'M100000000000000.28 100000000000000.27 L100000000000000.06 100000000000000.17', null],
+  ['translated quadratic reversal', 'M1000000 0 Q1000060 3 1000020 1', 'M1000030 1 V2', [1000030, 1.5]],
+]) {
+  test(`public readable-v2 check retains a finite crossing with ${name}`, async t => {
+    const result = await check(t, arrow(first) + arrow(second, { id: 'other', from: 'c', to: 'd' }), {
+      publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+    });
+    assert.equal(result.code, 1);
+    assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+    const crossing = result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing');
+    assert.ok(crossing, JSON.stringify(result.receipt.composition.issues));
+    assert.ok(crossing.point.every(Number.isFinite));
+    if (expected) assert.deepEqual(crossing.point, expected);
+    else {
+      assert.ok(crossing.point[0] >= 100000000000000.2 && crossing.point[0] <= 100000000000000.3);
+      assert.ok(Math.abs(crossing.point[1] - 100000000000000.23) < 0.125,
+        'public issue coordinates are rounded to tenths of a pixel');
+    }
+  });
+}
+
+test('public readable-v2 check retains orthogonality of a translated horizontal quadratic reversal', async t => {
+  const result = await check(t, arrow('M0 100000000000000 Q1 100000000000000 -3 100000000000000'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+test('underflow orientation fallback preserves the existing absolute crossing tolerance', async t => {
+  const result = await check(t, arrow('M0 0 H1e308')
+    + arrow('M5e307 -5e-318 V1e308', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, true);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 0);
+});
+
+test('public readable-v2 check does not invent a crossing from a non-collinear quadratic extremum', async t => {
+  const result = await check(t, arrow('M0 0 Q2000000000000000 1000000000000000 1000000000000000 500000000000001')
+    + arrow('M1000000000000000 500000000000000.1 V500000000000000.3', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, true);
+  assert.equal(result.receipt.composition.metrics.properCrossings, 0);
+});

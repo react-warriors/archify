@@ -117,29 +117,38 @@ export function analyzeSvgPath(source) {
 
     const start = current;
     const cross = (control[0] - start[0]) * (end[1] - start[1]) - (control[1] - start[1]) * (end[0] - start[0]);
-    // Normalize each axis separately: a single scale would erase a small
-    // vertical component next to a huge horizontal coordinate. The error
-    // bound admits arithmetic round-off, not the existing near-collinear band.
-    const scales = [0, 1].map(axis => Math.max(Math.abs(start[axis]), Math.abs(control[axis]), Math.abs(end[axis])) || 1);
-    const scaled = [start, control, end].map(point => point.map((value, axis) => value / scales[axis]));
-    const left = (scaled[1][0] - scaled[0][0]) * (scaled[2][1] - scaled[0][1]);
-    const right = (scaled[1][1] - scaled[0][1]) * (scaled[2][0] - scaled[0][0]);
-    const collinear = Math.abs(left - right) <= 8 * Number.EPSILON * (Math.abs(left) + Math.abs(right));
+    // Subtract the local origin before scaling so a large translation cannot
+    // erase a short displacement. Scale absolute coordinates first only when
+    // the subtraction itself overflows. Independent axes retain thin curves.
+    const scaled = [start, control, end].map(() => []);
+    const scales = [0, 1].map(axis => {
+      const offsets = [start, control, end].map(point => point[axis] - start[axis]);
+      const finite = offsets.every(Number.isFinite);
+      const scale = Math.max(...(finite ? offsets : [start[axis], control[axis], end[axis]]).map(Math.abs));
+      for (let index = 0; index < scaled.length; index += 1) {
+        scaled[index][axis] = finite ? offsets[index] / (scale || 1)
+          : [start, control, end][index][axis] / scale - start[axis] / scale;
+      }
+      return scale;
+    });
+    const left = scaled[1][0] * scaled[2][1];
+    const right = scaled[1][1] * scaled[2][0];
+    const collinear = Math.abs(left - right) <= 2 * Number.EPSILON * (Math.abs(left) + Math.abs(right));
     if (collinear) {
       // A collinear curve can reverse beyond its endpoints. Split at that
       // extremum so structural-border analysis sees the actual traced extent.
-      const axis = Math.abs(control[0] - start[0]) + Math.abs(end[0] - start[0])
-        >= Math.abs(control[1] - start[1]) + Math.abs(end[1] - start[1]) ? 0 : 1;
-      const scale = Math.max(Math.abs(start[axis]), Math.abs(control[axis]), Math.abs(end[axis])) || 1;
-      const scaledStart = start[axis] / scale;
-      const scaledControl = control[axis] / scale;
-      const scaledEnd = end[axis] / scale;
-      const denominator = scaledStart - 2 * scaledControl + scaledEnd;
-      const turning = denominator === 0 ? 0 : (scaledStart - scaledControl) / denominator;
+      const axis = scales[0] >= scales[1] ? 0 : 1;
+      const denominator = scaled[2][axis] - 2 * scaled[1][axis];
+      const turning = denominator === 0 ? 0 : -scaled[1][axis] / denominator;
       if (turning > 0 && turning < 1) {
-        const remaining = 1 - turning;
-        const vertex = [0, 1].map(index => remaining * remaining * start[index]
-          + 2 * remaining * turning * control[index] + turning * turning * end[index]);
+        // De Casteljau interpolation preserves a constant axis exactly and
+        // evaluates translated vertices without summing rounded large terms.
+        const interpolate = (left, right) => {
+          const delta = right - left;
+          return Number.isFinite(delta) ? left + turning * delta : (1 - turning) * left + turning * right;
+        };
+        const vertex = [0, 1].map(index => interpolate(interpolate(start[index], control[index]),
+          interpolate(control[index], end[index])));
         if (!vertex.every(Number.isFinite)) return failure(parameterOffset, 'computed coordinate is not finite', command);
         subpath.straightSegments.push({ start, end: vertex }, { start: vertex, end });
       } else subpath.straightSegments.push({ start, end });
