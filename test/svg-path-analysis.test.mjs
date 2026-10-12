@@ -197,3 +197,14 @@ for (const [name, source, vertex] of [
     assert.equal(curve.segments.length, 8, 'the existing sampled path contract remains unchanged');
   });
 }
+
+test('tolerated curvature with an underflowing normalized endpoint retains only its chord', () => {
+  const [curve] = parsed('M0 0 Q1e308 1 1e-16 0');
+  assert.deepEqual(curve.straightSegments, [{ start: [0, 0], end: [1e-16, 0] }]);
+});
+
+test('translated decimal collinear reversal includes subtraction round-off', () => {
+  const [curve] = parsed('M2200.5 71.8 Q2432 -30.7 2246.8 51.3');
+  assert.equal(curve.straightSegments.length, 2);
+  assert.ok(curve.straightSegments[0].end[0] > 2329);
+});

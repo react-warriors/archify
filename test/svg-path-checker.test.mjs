@@ -662,3 +662,21 @@ for (const [name, lines] of [
     assert.match(result.receipt.checks.find(item => item.name === 'relationship_crossings').details.join('\n'), /\[3, 3\]/);
   });
 }
+
+test('public readable-v2 preserves a tolerated horizontal chord when normalized endpoint underflows', async t => {
+  const result = await check(t, arrow('M0 0 Q1e308 1 1e-16 0'), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.checks.find(item => item.name === 'orthogonal_arrows').ok, true);
+  assert.equal(result.receipt.checks.find(item => item.name === 'finite_svg').ok, true);
+});
+
+test('public readable-v2 detects the translated decimal reversal crossing', async t => {
+  const result = await check(t, arrow('M2200.5 71.8 Q2432 -30.7 2246.8 51.3')
+    + arrow('M2293.1 29.8 V31.8', { id: 'other', from: 'c', to: 'd' }), {
+    publicCli: true, rootAttrs: 'data-layout-contract="readable-v2"',
+  });
+  assert.equal(result.receipt.composition.metrics.properCrossings, 1);
+  assert.equal(result.receipt.checks.find(item => item.name === 'relationship_crossings').ok, false);
+  assert.deepEqual(result.receipt.composition.issues.find(item => item.code === 'composition/proper-crossing').point, [2293.1, 30.8]);
+});

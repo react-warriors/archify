@@ -41,6 +41,24 @@ export function crossProductSign(a, b, c) {
   return magnitude > tolerance ? (determinant > 0n ? 1 : -1) : 0;
 }
 
+// Compare relative collinearity without scaling nonzero offsets/products to
+// zero. Include coordinate representation error before origin subtraction;
+// translated decimal points can lose more than two product ulps in that step.
+// The caller also applies the existing absolute curvature tolerance.
+export function collinearWithinRoundoff(a, b, c) {
+  const exact = exactCoordinates([a, b, c]);
+  if (!exact) return false;
+  const [ax, ay, bx, by, cx, cy] = exact.coordinates;
+  const abs = value => value < 0n ? -value : value;
+  const ux = bx - ax, uy = by - ay, vx = cx - ax, vy = cy - ay;
+  const determinant = ux * vy - uy * vx;
+  const bound = (abs(bx) + abs(ax)) * abs(vy)
+    + (abs(cy) + abs(ay)) * abs(ux)
+    + (abs(by) + abs(ay)) * abs(vx)
+    + (abs(cx) + abs(ax)) * abs(uy);
+  return (abs(determinant) << 52n) <= bound;
+}
+
 // Round a signed rational times a binary power once, to nearest, ties-even.
 // Shift integers before division so cancellation and subnormals are preserved.
 function rationalNumber(numerator, denominator, binaryPower = 0) {

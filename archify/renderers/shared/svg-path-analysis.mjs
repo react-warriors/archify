@@ -1,4 +1,4 @@
-import { crossProductSign, exactQuadraticTurningPoint } from './geometry-predicates.mjs';
+import { collinearWithinRoundoff, crossProductSign, exactQuadraticTurningPoint } from './geometry-predicates.mjs';
 
 // 仅分析静态检查器需要的路径子集，不作为通用 SVG 渲染器。
 const NUMBER = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/y;
@@ -118,31 +118,14 @@ export function analyzeSvgPath(source) {
     if (upper !== 'Q') { line(end); continue; }
 
     const start = current;
-    // Subtract the local origin before scaling so a large translation cannot
-    // erase a short displacement. Scale absolute coordinates first only when
-    // the subtraction itself overflows. Independent axes retain thin curves.
-    const scaled = [start, control, end].map(() => []);
-    const scales = [0, 1].map(axis => {
-      const offsets = [start, control, end].map(point => point[axis] - start[axis]);
-      const finite = offsets.every(Number.isFinite);
-      const scale = Math.max(...(finite ? offsets : [start[axis], control[axis], end[axis]]).map(Math.abs));
-      for (let index = 0; index < scaled.length; index += 1) {
-        scaled[index][axis] = finite ? offsets[index] / (scale || 1)
-          : [start, control, end][index][axis] / scale - start[axis] / scale;
-      }
-      return scale;
-    });
-    const left = scaled[1][0] * scaled[2][1];
-    const right = scaled[1][1] * scaled[2][0];
-    // Relative round-off cannot hide curvature above the absolute tolerance,
-    // including cases whose raw products overflow.
     const curvature = crossProductSign(start, control, end);
-    const collinear = curvature === 0
-      && Math.abs(left - right) <= 2 * Number.EPSILON * (Math.abs(left) + Math.abs(right));
+    const collinear = curvature === 0 && collinearWithinRoundoff(start, control, end);
     if (collinear) {
       // A collinear curve can reverse beyond its endpoints. Split at that
       // extremum so structural-border analysis sees the actual traced extent.
-      const axis = scales[0] >= scales[1] ? 0 : 1;
+      const spans = [0, 1].map(axis => Math.max(Math.abs(control[axis] - start[axis]),
+        Math.abs(end[axis] - start[axis])));
+      const axis = spans[0] >= spans[1] ? 0 : 1;
       const vertex = exactQuadraticTurningPoint(start, control, end, axis);
       if (vertex) {
         if (!vertex.every(Number.isFinite)) return failure(parameterOffset, 'computed coordinate is not finite', command);
