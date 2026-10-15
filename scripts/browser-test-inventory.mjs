@@ -40,4 +40,9 @@ export const browserTestFiles = [
   'workflow-edge-label-contrast-browser.test.mjs',
   'lifecycle-note-contrast-browser.test.mjs',
   'sequence-segment-contrast-browser.test.mjs',
+  'document-html-render.test.mjs',
+  'document-report-designs.test.mjs',
+  'document-tool.test.mjs',
+  'document-templates.test.mjs',
+  'document-components.test.mjs',
 ];

@@ -252,6 +252,19 @@ DeepSeek Harness（社区集成、显式启用）：运行 `dsh plugin --profile
 
 继续说：`增加 Redis`、`把鉴权移到左侧`、`突出回滚路径`。Archify 会保留 Typed Source，只修改相关部分。
 
+## Markdown 文档
+
+用任意 HTML 文件的设计渲染普通 Markdown，也可选择决策、分析、复盘三个模板：
+
+```bash
+node archify/bin/archify.mjs document report.md report.html --design design.html --json
+node archify/bin/archify.mjs document report.md report.html --template review/static --json
+```
+
+同一渲染器提供通用 JSON 工具与 MCP 接口。AI 可通过段落标号，仅修改 Markdown
+调用六种原生 SVG 组件。参见[文档渲染](archify/document/README.md)和
+[组件说明](archify/references/document-components.md)。渲染需要本地 Chrome。
+
 ## 选择合适的图表
 
 <details>

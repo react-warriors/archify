@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { assertThirdPartyNotices } from './third-party-notices-contract.mjs';
 import { verifyPackagedUpdateChecker } from './package-update-smoke.mjs';
+import { containedBy } from '../archify/renderers/shared/path-semantics.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -106,6 +107,12 @@ try {
   }
 
   const packageJson = JSON.parse(fs.readFileSync(path.join(skillRoot, 'package.json'), 'utf8'));
+  const documents = JSON.parse(run(['document', 'templates', '--json']));
+  if (!documents.ok || documents.templates.length !== 3 || documents.default !== 'review/static') throw new Error('packaged document catalog is incomplete');
+  for (const template of documents.templates) {
+    if (containedBy(skillRoot, template.path).status !== 'match' || !fs.existsSync(template.path)) throw new Error('document templates must resolve inside the selected package');
+  }
+  if (!fs.existsSync(path.join(skillRoot, 'document/designs/components/native.html'))) throw new Error('packaged native document components are missing');
   const dependencyFields = [
     'dependencies',
     'devDependencies',

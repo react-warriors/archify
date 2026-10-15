@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="zh" class="decision" data-report="decision" data-appearance="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>决策简报</title><style>
+:root{color-scheme:light;--paper:#f4f1e9;--surface:#fffdf8;--ink:#202923;--muted:#6c7168;--line:#deddd3;--accent:#b7472b;--soft:#f4e8db;--plot:#ebe5d8;--hero:#23372f;--sans:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;--serif:Georgia,"Noto Serif SC","Songti SC",SimSun,serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:100px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.8 var(--sans)}button,a{-webkit-tap-highlight-color:transparent}a{color:var(--accent);text-underline-offset:4px}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:4px}::selection{background:var(--soft)}
+.toolbar{height:68px;max-width:1320px;margin:auto;padding:0 36px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:2px}.brand svg{width:120px;height:34px;color:var(--ink)}.brand-label{padding-left:12px;border-left:1px solid var(--line);font-size:9px;letter-spacing:1.5px;color:var(--muted)}.tools{display:flex;gap:10px}.tool{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:transparent;display:grid;place-items:center}.tool svg{width:17px;height:17px}.tool:hover{background:var(--soft)}.tool-label{font-size:12px;color:var(--muted);margin-right:6px}
+.report{width:min(1200px,calc(100% - 72px));margin:0 auto 72px;min-width:0}.hero{padding:48px 0 32px;position:relative}.eyebrow{display:flex;align-items:center;gap:12px;color:var(--accent);font-size:11px;letter-spacing:2px;font-weight:700}.eyebrow:before{content:"";width:28px;height:2px;background:currentColor}.hero h1{font:600 clamp(32px,4.2vw,54px)/1.2 var(--serif);letter-spacing:-1.5px;max-width:1000px;margin:20px 0 18px;text-wrap:balance}.hero .lede{font-size:16px;color:var(--muted);max-width:none;margin:0;line-height:1.8}.hero .lede strong{color:var(--ink)}
+.section-nav{display:flex;align-items:center;gap:24px;padding:15px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:30px;overflow:auto}.section-nav a{display:flex;align-items:center;gap:8px;flex-shrink:0;text-decoration:none;color:var(--muted);font-size:12px}.nav-number{font:11px/1 var(--sans);color:var(--accent)}.section-nav a[aria-current="true"]{color:var(--ink);font-weight:700}
+.chapters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;counter-reset:chapter}.chapter{min-width:0;background:var(--surface);border:1px solid var(--line);padding:26px 30px 30px;scroll-margin-top:30px}.chapter-header{display:flex;align-items:baseline;gap:16px;margin-bottom:18px}.chapter-index{color:var(--accent);font:12px/1.5 var(--sans);letter-spacing:1px;flex-shrink:0}.chapter h2{font-size:21px;line-height:1.5;margin:0;font-weight:650;text-wrap:balance}.chapter-body{min-width:0}.chapter-body>:first-child{margin-top:0}.chapter-body>:last-child{margin-bottom:0}.chapter p{margin:0 0 18px}.chapter h3{font-size:16px;line-height:1.5;margin:28px 0 12px}.chapter strong{font-weight:700}.chapter em{font-style:normal;text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:5px}.chapter blockquote{margin:22px 0;padding:18px 22px;border-left:3px solid var(--accent);background:var(--soft);font-size:17px;font-weight:500;line-height:1.9}.chapter ul,.chapter ol{padding-left:22px;margin:14px 0 20px}.chapter li{padding:3px 0 3px 3px}.chapter li::marker{color:var(--accent)}.chapter hr{border:0;border-top:1px solid var(--line);margin:28px 0}.report code{font:13px/1.6 "Cascadia Code",Consolas,monospace;background:var(--soft);padding:2px 5px;border-radius:3px}.report pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--soft);border:1px solid var(--line);padding:18px 20px;margin:20px 0}.report pre code{background:none;padding:0}.report img{max-width:100%;height:auto}.chapter-body>svg,.chapter-body>div>svg{max-width:100%;height:auto}
+.table-scroll{min-width:0;max-width:100%;overflow:auto;margin:22px 0}.table-scroll table{min-width:420px}.report table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;line-height:1.6}.report th{font-weight:650;text-align:left;color:var(--muted);background:var(--soft)}.report th,.report td{padding:11px 14px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.report tbody tr:last-child td{border-bottom:0}.report tbody tr.is-highlighted{background:var(--soft)}
+.data-viz{margin:24px 0;min-width:0}.plots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px}.data-viz figure{margin:0;min-width:0}.data-viz figcaption{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--ink);font-size:12px;font-weight:650;padding-bottom:10px}.chart-tag{color:var(--muted);font-size:10px;font-weight:400;letter-spacing:1px}.data-viz svg{display:block;width:100%;height:auto;overflow:visible;font-family:var(--sans)}.chart-label{fill:var(--muted);font-size:12px}.chart-value{fill:var(--ink);font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}.chart-axis{stroke:var(--line);stroke-width:1}.chart-zero{stroke:var(--muted);stroke-width:1}.chart-bar{fill:var(--accent);opacity:.9}.chart-stem{stroke:var(--plot);stroke-width:5;stroke-linecap:round}.chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:2.5}.chart-hit{fill:transparent}.chart-mark:focus,.chart-mark:hover{outline:none}.chart-mark:focus .chart-bar,.chart-mark:hover .chart-bar{opacity:1}.chart-mark:focus .chart-dot,.chart-mark:hover .chart-dot{fill:var(--accent)}.data-viz .table-scroll{margin-top:20px}.sequence-viz{padding:14px 18px;border:1px solid var(--line);background:var(--soft);border-radius:6px}.sequence-viz svg{max-height:none}.step-link{stroke:var(--line);stroke-width:2}.step-dot{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}.step-number{fill:var(--accent);font-size:11px;font-weight:650}.step-label{fill:var(--ink);font-size:14px}
+.decision .chapter:first-child{grid-column:1/-1;border-top:3px solid var(--accent);padding:30px 36px}.decision .chapter:first-child h2{font-size:24px}.decision .chapter:first-child .chapter-body{display:flow-root}
+
+.analysis{--paper:#edf1f5;--surface:#fff;--ink:#1f3048;--muted:#6b7a91;--line:#dce3ec;--accent:#315ec9;--soft:#f1f5fc;--plot:#c9d6ed}.analysis .toolbar{max-width:1420px}.reading-layout{width:min(1360px,calc(100% - 72px));margin:auto;display:grid;grid-template-columns:190px minmax(0,1fr);gap:40px}.rail{position:sticky;top:36px;align-self:start;padding-top:52px}.rail-label{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:16px}.rail .section-nav{display:block;border:0;margin:0;padding:0;overflow:visible}.rail .section-nav a{padding:11px 12px 11px 0;border-bottom:1px solid var(--line);align-items:baseline;line-height:1.7;font-size:12px}.analysis .report{width:100%;margin:0 0 80px;background:var(--surface);padding:0 52px 40px;border-left:1px solid var(--line);border-right:1px solid var(--line)}.analysis .hero{padding-top:44px;padding-bottom:34px;border-bottom:1px solid var(--line)}.analysis .hero h1{font-family:var(--sans);font-size:clamp(30px,3.5vw,43px);letter-spacing:-1.5px;font-weight:650}.analysis .chapters{display:block}.analysis .chapter{padding:32px 0 36px;border:0;border-bottom:1px solid var(--line);background:none}.analysis .chapter:last-child{border-bottom:0}.analysis .chapter-index{border:1px solid var(--line);padding:3px 7px;border-radius:3px;line-height:1.2}.analysis .chapter h2{font-size:20px}.analysis .chapter blockquote{background:none;border-left:2px solid var(--accent);padding:3px 20px;font-weight:400;color:var(--muted);font-size:16px}.analysis .data-viz{padding:20px;background:var(--soft);border-radius:7px}.analysis .data-viz .table-scroll{background:var(--surface);border:1px solid var(--line);border-radius:4px}.analysis .chapter-body>p{max-width:none}
+.review{--paper:#f6f8fb;--surface:#fff;--ink:#263348;--muted:#68778b;--line:#e1e7ef;--accent:#526fc7;--soft:#f1f4fb;--plot:#d9e1f3}.review .hero{padding:42px 0 30px;margin:0;background:none;border-radius:0;color:var(--ink)}.review .hero h1{font-family:var(--sans);font-weight:600;font-size:clamp(30px,3.5vw,43px);letter-spacing:-1.3px;max-width:1040px}.review .hero .lede{color:var(--muted)}.review .eyebrow{color:var(--accent)}.review .hero code{color:var(--ink)}.review .hero :is(.table-scroll,pre){color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px}.review-cues{display:flex;gap:24px;margin-top:20px;color:var(--muted);font-size:11px;letter-spacing:.5px}.review-cues span{display:flex;align-items:center;gap:8px}.review-cues span:before{content:"";width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.55}.review .section-nav{margin-bottom:24px;border-top:1px solid var(--line);gap:22px}.review .section-nav a[aria-current="true"]{color:var(--accent)}.review .chapters{display:block;padding:0;margin:0;border:0}.review .chapter{position:relative;border:1px solid var(--line);border-radius:10px;padding:26px 32px 30px;margin-bottom:20px;background:var(--surface)}.review .chapter-header{gap:14px;margin-bottom:22px}.review .chapter-index{position:static;min-width:32px;width:auto;height:auto;padding:4px 8px;border:1px solid var(--line);border-radius:5px;background:var(--soft);color:var(--muted);text-align:center;line-height:1.3;font-size:10px}.review .chapter h2{font-size:20px;font-weight:600}.review .chapter-body{display:flow-root}.review .chapter-body>p{font-size:15px}.review .chapter blockquote{border:0;border-left:2px solid var(--line);border-radius:0;background:none;font-size:17px;font-weight:400;margin:0 0 20px;padding:4px 0 4px 18px}.review .plots{gap:32px}.review .chart-bar{opacity:.75}.review .data-viz .table-scroll{border:1px solid var(--line);border-radius:6px}.review .sequence-viz{padding:18px 20px;background:none;border:1px solid var(--line);border-radius:6px}.review .step-dot{fill:var(--surface);stroke:var(--line)}.review .step-link{stroke:var(--line)}
+
+.comparison-figure{grid-column:1/-1}.comparison-key{display:flex;flex-wrap:wrap;gap:8px 24px;margin:2px 0 8px;font-size:12px;color:var(--muted)}.comparison-key span{display:flex;align-items:center;gap:8px}.comparison-key span:before{content:"";width:9px;height:9px;border-radius:50%;border:2px solid var(--muted);background:var(--surface);flex-shrink:0}.comparison-key .comparison-key-1:before{background:var(--accent);border-color:var(--accent)}.chart-note{font-size:10px;color:var(--muted);margin:0 0 12px}.comparison-link{stroke:var(--plot);stroke-width:5;stroke-linecap:round}.comparison-first{fill:var(--surface);stroke:var(--muted);stroke-width:2}.comparison-second{fill:var(--accent);stroke:var(--surface);stroke-width:1.5}.comparison-delta{fill:var(--accent);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}.comparison-mark:focus .comparison-link,.comparison-mark:hover .comparison-link{stroke:var(--accent);opacity:.6}.sequence-viz,.review .sequence-viz{padding:20px 0;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:none}.step-link{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}.step-card,.hierarchy-card{fill:var(--surface);stroke:var(--line);stroke-width:1}.structure-label{fill:var(--ink);font-size:14px}.step-dot,.review .step-dot{fill:var(--soft);stroke:none}.hierarchy-viz figure{overflow:auto;padding-bottom:4px}.hierarchy-parent{fill:var(--soft)}.hierarchy-edge{fill:none;stroke:var(--plot);stroke-width:2}.hierarchy-node:focus,.flow-node:focus{outline:none}.hierarchy-node:focus .hierarchy-card,.hierarchy-node:hover .hierarchy-card,.flow-node:focus .step-card,.flow-node:hover .step-card{stroke:var(--accent);stroke-width:2}.viz-source{margin-top:18px;border-top:1px dashed var(--line);padding-top:10px}.viz-source summary{width:fit-content;cursor:pointer;color:var(--muted);font-size:12px}.viz-source summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.report li.is-highlighted{background:var(--soft)}
+.step-title{font-weight:650}
+.chart-controls[hidden]{display:none}
+.comparison-key.is-difference span:before{display:none}.comparison-key.is-difference:before{content:"原值列序：";color:var(--muted)}
+.chart-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 12px;margin:10px 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--soft);font-size:12px;color:var(--muted)}.chart-controls label{display:flex;align-items:center;gap:8px;max-width:100%;min-width:0}.chart-controls select,.chart-reset{min-width:0;max-width:240px;border:1px solid var(--line);border-radius:4px;padding:5px 8px;background:var(--surface);color:var(--ink);font:12px/1.5 var(--sans)}.chart-reset{margin-left:auto;cursor:pointer;white-space:nowrap}.chart-controls :is(select,input):focus-visible{outline:2px solid var(--accent);outline-offset:3px}.chart-controls .date-control{flex:1;min-width:0}.date-control input{flex:1;min-width:100px;max-width:460px;accent-color:var(--accent)}.chart-readout{display:block;font-size:12px;line-height:1.7;margin:8px 0;color:var(--ink);overflow-wrap:anywhere}.date-cursor{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 4;pointer-events:none}.chart-mark.is-date-match .chart-bar{opacity:1}.chart-mark.is-date-match .chart-label{fill:var(--accent);font-weight:650}.report tr.is-date-match{background:var(--soft)}.hierarchy-node{cursor:pointer}.hierarchy-node.is-muted,.hierarchy-edge.is-muted{opacity:.22}.hierarchy-node:hover,.hierarchy-node:focus{opacity:1}.hierarchy-node.is-selected .hierarchy-card{stroke:var(--accent);stroke-width:2}.hierarchy-edge.is-related{stroke:var(--accent)}.report li.is-tree-match::marker{color:var(--accent);font-weight:700}
+@media print{.chart-controls{display:none!important}.hierarchy-node.is-muted,.hierarchy-edge.is-muted{opacity:1}.viz-source::details-content{content-visibility:visible}.viz-source>:not(summary){display:block!important}.viz-source summary{display:none}.hierarchy-viz figure{overflow:visible}.hierarchy-viz svg{min-width:0!important}.structure-label{fill:#111}}
+.footer{width:min(1200px,calc(100% - 72px));margin:0 auto;padding:20px 0 36px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-size:10px;letter-spacing:1px}.footer svg{width:16px;height:16px;color:var(--accent)}
+html[data-appearance="dark"]{color-scheme:dark;--paper:#141c22;--surface:#1c2730;--ink:#e5eceb;--muted:#9aacae;--line:#33434c;--accent:#eda985;--soft:#24343d;--plot:#415966;--hero:#12241e}html[data-appearance="dark"].analysis{--accent:#90b5ff}html[data-appearance="dark"].review{--accent:#a3b8f1}
+@media(max-width:1100px){.decision .chapter:first-child .chapter-body{display:block}.decision .chapter:first-child .chapter-body>blockquote{margin:0 0 22px}.decision .chapter:first-child .data-viz{margin:22px 0}.reading-layout{grid-template-columns:150px minmax(0,1fr);gap:20px}.analysis .report{padding:0 30px 30px}.analysis .plots{grid-template-columns:1fr}}
+@media(max-width:760px){.toolbar{height:58px;padding:0 20px}.brand{font-size:10px;letter-spacing:1px}.tool-label{display:none}.report{width:calc(100% - 36px);margin-bottom:40px}.hero{padding:28px 0 24px}.hero h1{letter-spacing:-.8px}.hero .lede{font-size:14px}.section-nav{gap:18px;margin-bottom:20px}.chapters{grid-template-columns:1fr;gap:16px}.chapter,.decision .chapter:first-child{padding:22px 20px}.chapter h2,.decision .chapter:first-child h2{font-size:19px}.decision .chapter:first-child .chapter-body>blockquote{font-size:20px}.chapter blockquote{font-size:16px;padding:12px 16px}.plots{grid-template-columns:1fr}.reading-layout{display:block;width:calc(100% - 36px)}.rail{position:static;padding:20px 0 0}.rail-label{display:none}.rail .section-nav{display:flex;overflow:auto;gap:18px}.rail .section-nav a{padding:8px 0;white-space:nowrap}.analysis .report{border:0;padding:0 20px 22px}.analysis .hero{padding:28px 0 24px}.analysis .chapter{padding:24px 0}.analysis .data-viz{padding:14px}.review .hero{padding:28px 0;margin:0}.review .chapters{padding:0;margin:0}.review .chapter{padding:22px 20px}.review .chapter-index{min-width:28px;font-size:9px}.review .plots{gap:20px}.footer{width:calc(100% - 36px);gap:20px}.data-viz{margin:20px 0}.table-scroll{margin:18px 0}.data-viz figcaption{font-size:11px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{html{color-scheme:light!important;--paper:white!important;--surface:white!important;--ink:#111!important;--muted:#444!important;--line:#ccc!important;--accent:#333!important;--soft:#f5f5f5!important;--plot:#ddd!important}body{background:#fff;font-size:10pt;line-height:1.6}.toolbar,.section-nav,.rail,.tools{display:none!important}.report,.reading-layout{display:block;width:100%;margin:0;padding:0!important;border:0!important}.hero,.review .hero{margin:0 0 20px;padding:0 0 20px;background:none;color:#111;border-radius:0}.hero h1,.review .hero h1{font-size:26pt;color:#111}.hero .lede,.review .hero .lede,.review .eyebrow{color:#444}.chapters,.review .chapters{display:block;margin:0;padding:0;border:0}.chapter,.decision .chapter:first-child,.analysis .chapter,.review .chapter{padding:18px 0;border:0;border-top:1px solid #ccc;border-radius:0;margin:0 0 18px;background:none}.decision .chapter:first-child .chapter-body{display:block}.review .chapter-index{position:static;background:none;border:0;color:#333;width:auto;height:auto;line-height:1.5}.chapter h2{font-size:15pt}.chapter-header,.chapter h3{break-after:avoid}.data-viz figure,.chapter blockquote,.sequence-viz{break-inside:avoid}.plots{grid-template-columns:repeat(2,minmax(0,1fr))}.table-scroll{overflow:visible}.table-scroll table{min-width:0}.report th,.report td{padding:7px}.analysis .data-viz{background:none;padding:0}.data-viz svg{overflow:visible}.footer{width:100%;padding:10px 0;font-size:8pt}.chart-label{fill:#555}.chart-value,.step-label{fill:#111}.chart-bar{fill:#555}.chart-dot{fill:white;stroke:#333}.report pre{font-size:9pt}.chapter a{color:#111}}
+
+.content-graph{margin:28px 0 32px;min-width:0}.content-graph>figcaption{padding:0 0 22px;font-size:12px;font-weight:650;color:var(--muted);letter-spacing:.2px}.content-graph-stage{position:relative;isolation:isolate}.content-wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:-1;pointer-events:none}.content-wires path{fill:none;stroke:var(--plot);stroke-width:1.5;stroke-linejoin:round}.content-wires circle{fill:var(--accent);opacity:.55}.graph-table.table-scroll{overflow:visible;margin:0}.graph-table table{display:block;min-width:0;line-height:1.75;border:0}.graph-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.graph-table tbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:32px 28px}.graph-table [data-graph-columns="3"] tbody,.graph-table [data-graph-columns="4"] tbody{grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))}.graph-table .attribute-group{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));align-content:start;gap:34px 18px;min-width:0;break-inside:avoid}.graph-table [data-graph-columns="3"] .attribute-group{grid-template-columns:repeat(2,minmax(0,1fr))}.graph-table [data-graph-columns="4"] .attribute-group{grid-template-columns:repeat(3,minmax(0,1fr))}.graph-table .attribute-key{grid-column:1/-1;justify-self:center;max-width:100%;background:var(--soft);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px;font-weight:650;padding:10px 18px;text-align:center;position:relative;z-index:1}.graph-table .attribute-note{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:14px 17px 18px;min-width:0;text-align:left;vertical-align:top;position:relative;z-index:1}.graph-table .attribute-note:before{content:attr(data-field);display:block;color:var(--muted);font-size:10px;letter-spacing:.4px;margin-bottom:7px}.report .graph-table tr:last-child td{border-bottom:1px solid var(--line)}.content-graph .statement-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:32px 28px}.content-graph .statement-list>li{padding:0;display:flex;flex-direction:column;align-items:center;gap:34px;min-width:0;break-inside:avoid}.statement-key{padding:10px 17px;max-width:100%;text-align:center;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);font-size:14px;line-height:1.6;overflow-wrap:anywhere}.statement-note{align-self:stretch;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:17px 19px;font-size:14px;line-height:1.85;overflow-wrap:anywhere}.statement-key code{background:none;padding:0}.statement-note>:first-child{margin-top:0}.statement-note>:last-child{margin-bottom:0}.analysis .content-graph{padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.decision .content-graph{padding:22px 0}.review .content-graph .attribute-key,.review .statement-key{background:var(--soft)}.content-graph td a,.statement-note a{overflow-wrap:anywhere}
+@media print{.content-graph{break-inside:auto}.graph-table tbody,.content-graph .statement-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.graph-table [data-graph-columns="3"] tbody,.graph-table [data-graph-columns="4"] tbody{grid-template-columns:1fr}.content-wires{print-color-adjust:exact}.graph-table thead{position:absolute}}
+
+/* Each report uses the same source blocks with a different reading composition. */
+.option-plane,.sample-profile{grid-column:1/-1;padding-bottom:12px;margin-bottom:8px!important;border-bottom:1px solid var(--line)}
+.sample-profile .comparison-key-2:before{border-style:dashed}
+.plane-axis-title{fill:var(--muted);font-size:12px}.option-key{display:flex;flex-wrap:wrap;gap:12px 26px;margin:2px 0 13px;font-size:13px;color:var(--ink)}.option-key span{display:flex;align-items:baseline;gap:9px;overflow-wrap:anywhere}.option-key b{font-size:11px;font-weight:600;color:var(--accent)}.option-dot{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}.option-ordinal{fill:var(--accent);font-size:11px;font-weight:650}.option-point:focus,.sample-point:focus{outline:none}.option-point:hover .option-dot,.option-point:focus .option-dot{fill:var(--soft);stroke-width:2.5}.sample-trace{fill:none;stroke:var(--muted);stroke-width:1.8}.sample-dot{fill:var(--surface);stroke:var(--muted);stroke-width:2}.sample-series-1 .sample-trace{stroke:var(--accent)}.sample-series-1 .sample-dot{stroke:var(--accent);fill:var(--accent)}.sample-series-2 .sample-trace{stroke-dasharray:5 4}.sample-point:hover .sample-dot,.sample-point:focus .sample-dot{stroke-width:3.5}.report .chart-note{font-size:11px;line-height:1.7;margin:0 0 15px}
+
+/* Decision: one prominent opening, then parallel evidence and clear next steps. */
+.decision .chapters{grid-template-columns:1fr}
+.decision .chapter:first-child .chapter-body>blockquote{background:none;border:0;border-bottom:1px solid var(--line);padding:0 0 24px;font:500 25px/1.7 var(--serif);margin:0 0 26px;max-width:none}
+.decision .chapter-body>p:has(>strong:first-child)>strong:first-child{display:block;font-size:18px;line-height:1.7;margin-bottom:8px}
+.decision .chapter-body>ul:not(:has(ul,ol)){list-style:none;padding:0;margin:22px 0;display:grid;gap:12px}.decision .chapter-body>ul:not(:has(ul,ol))>li{border-left:2px solid var(--accent);padding:5px 0 5px 18px}
+.decision .chapter-body>ol{padding-left:29px;border-left:1px solid var(--line);margin-left:8px}.decision .chapter-body>ol>li{padding:7px 0 12px 8px}
+.decision .graph-table table{display:grid;grid-template-columns:minmax(70px,.55fr) repeat(var(--options),minmax(0,1fr));gap:20px 18px;align-items:stretch}
+.decision .graph-table thead,.decision .graph-table thead tr,.decision .graph-table tbody,.decision .graph-table .attribute-group{display:contents;position:static;width:auto;height:auto;overflow:visible;clip-path:none}
+.decision .graph-table th{background:none;border:0;padding:13px 8px 13px 0;align-self:center;font-size:11px;overflow-wrap:anywhere}
+.decision .graph-table .attribute-key{justify-self:stretch;align-self:start;display:flex;align-items:center;justify-content:center;padding:12px 16px;min-height:48px}
+.decision .graph-table .attribute-note{margin-top:14px}.decision .graph-table .attribute-note:before{display:none}
+.decision .content-graph{padding:20px 0}.decision .content-wires{opacity:.6}
+
+/* Analysis: connected observations stay beside their complete explanations. */
+.analysis .chapter-body>blockquote{font-size:19px;color:var(--ink);line-height:1.8;padding:10px 22px}
+.analysis .chapter-body>pre{background:var(--surface);border-left:3px solid var(--plot);padding:20px 24px}
+.analysis .graph-table tbody,.analysis .graph-table [data-graph-columns] tbody{display:grid;grid-template-columns:1fr;gap:24px}
+.analysis .graph-table .attribute-group,.analysis .graph-table [data-graph-columns] .attribute-group{display:grid;grid-template-columns:minmax(140px,.4fr) minmax(0,1fr);gap:18px 48px}
+.analysis .graph-table .attribute-key{grid-column:1;grid-row:1/span var(--fields);align-self:center;justify-self:stretch;text-align:left;font-size:13px}
+.analysis .graph-table .attribute-note{grid-column:2}
+.analysis .content-graph .statement-list{display:grid;grid-template-columns:1fr;gap:22px}
+.analysis .content-graph .statement-list>li{display:grid;grid-template-columns:minmax(140px,.4fr) minmax(0,1fr);gap:48px;align-items:center}
+.analysis .statement-key{align-self:center;text-align:left}.analysis .statement-note{align-self:center}
+
+/* Review: the complete body follows the authored record order, with no inferred dates. */
+.review .chapters{padding-left:28px;border-left:1px solid var(--line);margin-left:16px}
+.review .chapter{margin-bottom:30px;border-radius:9px;padding:29px 32px 32px}
+.review .chapter-index{position:absolute;left:-46px;top:29px;width:32px;background:var(--paper);color:var(--accent);border:1px solid var(--line)}
+.review .chapter-header{margin-bottom:25px}.review .chapter-body>blockquote{padding:9px 20px 12px;border-left:2px solid var(--accent);font-size:20px;line-height:1.8;color:var(--ink);margin:20px 0 28px}
+.review .chapter-body>p:has(>strong:first-child){background:var(--soft);padding:18px 22px;border-radius:6px;margin:22px 0;font-size:15px;line-height:1.9}
+.review .chapter-body>ul:not(:has(ul,ol)){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));list-style:none;gap:18px;padding:0;margin:24px 0}
+.review .chapter-body>ul:not(:has(ul,ol))>li{padding:16px 19px;border-top:2px solid var(--plot);background:var(--soft);border-radius:0 0 6px 6px}
+.review .graph-table tbody,.review .graph-table [data-graph-columns] tbody{display:grid;grid-template-columns:1fr;gap:22px}
+.review .graph-table .attribute-group,.review .graph-table [data-graph-columns] .attribute-group{display:grid;grid-template-columns:minmax(130px,.32fr) repeat(3,minmax(0,1fr));gap:24px 40px;align-items:center}
+.review .graph-table [data-graph-columns="2"] .attribute-group{grid-template-columns:minmax(130px,.32fr) minmax(0,1fr)}
+.review .graph-table [data-graph-columns="3"] .attribute-group{grid-template-columns:minmax(130px,.32fr) repeat(2,minmax(0,1fr))}
+.review .graph-table .attribute-key{grid-column:1;justify-self:stretch;align-self:center;text-align:left;font-size:13px;padding:12px 16px}
+.review .content-graph .statement-list{display:grid;grid-template-columns:1fr;gap:22px}
+.review .content-graph .statement-list>li{display:grid;grid-template-columns:minmax(130px,.32fr) minmax(0,1fr);gap:40px;align-items:center}
+.review .statement-key{align-self:center;text-align:left}.review .statement-note{align-self:center}.review .sequence-viz{padding-top:24px;padding-bottom:24px}
+@media print{.review .chapters{padding-left:0;margin-left:0;border:0}.review .chapter-index{position:static}.decision .chapter:first-child .chapter-body>blockquote{font-size:18pt}.option-plane,.sample-profile{break-inside:avoid}.review .chapter-body>p:has(>strong:first-child){background:none}}
+
+</style></head><body><header class="toolbar"><div class="brand" role="img" aria-label="Archify"><svg xmlns="http://www.w3.org/2000/svg" width="875" height="240" viewBox="0 0 875 240" aria-hidden="true"><title >Archify</title><desc>Archify symbol and outlined Rubik wordmark. Transparent background.</desc><g transform="translate(0 20) scale(.55)"><path d="M151 94 81 164C67 178 60 191 60 212V248H97V212C97 204 100 199 106 193L179 120Z" fill="#0856F5"/>
+  <path d="M238 135C252 132 261 126 270 116L321 167C334 180 339 194 339 213V248H303V213C303 204 300 199 294 193Z" fill="#1DBBB7"/>
+  <rect x="146" y="16" width="110" height="104" rx="30" fill="#0856F5"/>
+  <rect x="18" y="238" width="110" height="104" rx="28" fill="#0856F5"/>
+  <rect x="274" y="238" width="108" height="104" rx="28" fill="#1DBBB7"/></g><g fill="currentColor"><path d="M279.71 150.77 270.09 175.375Q268.425 180.0 262.875 180.0H256.03Q254.365 180.0 253.16250000000002 178.7975Q251.96 177.595 251.96 175.93Q251.96 175.005 252.7 173.34L298.025 56.605000000000004Q300.43 50.5 306.35 50.5H317.45Q323.37 50.5 325.775 56.605000000000004L370.91499999999996 173.34Q371.655 175.005 371.655 175.93Q371.655 177.595 370.4525 178.7975Q369.25 180.0 367.585 180.0H360.74Q355.19 180.0 353.525 175.375L343.905 150.77ZM337.43 134.12 311.9 68.075 286.185 134.12Z"/><path d="M439.51 88.795V94.715Q439.51 96.75 438.03 98.23Q436.55 99.71000000000001 434.515 99.71000000000001H423.785Q413.425 99.71000000000001 407.9675 105.1675Q402.51 110.625 402.51 120.985V175.005Q402.51 177.04 401.03 178.51999999999998Q399.55 180.0 397.515 180.0H390.67Q388.635 180.0 387.155 178.51999999999998Q385.675 177.04 385.675 175.005V88.795Q385.675 86.76 387.155 85.28Q388.635 83.8 390.67 83.8H397.515Q399.55 83.8 401.03 85.28Q402.51 86.76 402.51 88.795V94.53Q406.21000000000004 88.98 411.39 86.39Q416.57 83.8 424.895 83.8H434.515Q436.55 83.8 438.03 85.28Q439.51 86.76 439.51 88.795Z"/><path d="M516.4300000000001 151.51Q517.725 148.735 519.02 147.625Q520.315 146.515 522.535 146.515H528.085Q530.12 146.515 531.6 147.90249999999997Q533.08 149.29 533.08 151.14Q533.08 157.43 528.085 164.645Q523.09 171.86 513.655 176.85500000000002Q504.22 181.85 491.45500000000004 181.85Q478.32 181.85 468.70000000000005 176.3Q459.08000000000004 170.75 453.90000000000003 161.0375Q448.72 151.325 448.165 139.3Q447.98 137.07999999999998 447.98 130.79Q447.98 126.35 448.165 124.5Q449.83000000000004 105.63 460.93000000000006 93.78999999999999Q472.03000000000003 81.95 491.45500000000004 81.95Q504.22 81.95 513.5625 86.85249999999999Q522.905 91.755 527.8075 98.8775Q532.71 106.0 533.08 112.29Q533.265 114.325 531.6925 115.805Q530.12 117.285 528.085 117.285H522.535Q520.315 117.285 519.02 116.175Q517.725 115.065 516.4300000000001 112.29Q509.95500000000004 97.86 491.45500000000004 97.86Q481.28000000000003 97.86 473.69500000000005 104.705Q466.11 111.55 465.0 125.425Q464.815 127.46000000000001 464.815 132.085Q464.815 136.34 465.0 138.375Q466.295 152.25 473.7875 159.095Q481.28000000000003 165.94 491.45500000000004 165.94Q509.95500000000004 165.94 516.4300000000001 151.51Z"/><path d="M632.755 180.0H625.91Q623.875 180.0 622.395 178.51999999999998Q620.915 177.04 620.915 175.005V126.16499999999999Q620.915 112.29 614.0699999999999 105.075Q607.2249999999999 97.86 595.015 97.86Q582.99 97.86 576.0525 105.075Q569.115 112.29 569.115 126.16499999999999V175.005Q569.115 177.04 567.635 178.51999999999998Q566.155 180.0 564.12 180.0H557.275Q555.24 180.0 553.76 178.51999999999998Q552.28 177.04 552.28 175.005V53.644999999999996Q552.28 51.610000000000014 553.76 50.13000000000001Q555.24 48.650000000000006 557.275 48.650000000000006H564.12Q566.155 48.650000000000006 567.635 50.13000000000001Q569.115 51.610000000000014 569.115 53.644999999999996V94.53Q573.185 89.165 580.3074999999999 85.5575Q587.43 81.95 597.79 81.95Q609.4449999999999 81.95 618.51 86.945Q627.5749999999999 91.94 632.6624999999999 101.2825Q637.75 110.625 637.75 123.39V175.005Q637.75 177.04 636.27 178.51999999999998Q634.79 180.0 632.755 180.0Z"/><path d="M675.265 69.185H664.7199999999999Q662.685 69.185 661.2049999999999 67.705Q659.7249999999999 66.225 659.7249999999999 64.19V53.644999999999996Q659.7249999999999 51.610000000000014 661.2049999999999 50.13000000000001Q662.685 48.650000000000006 664.7199999999999 48.650000000000006H675.265Q677.3 48.650000000000006 678.78 50.13000000000001Q680.26 51.610000000000014 680.26 53.644999999999996V64.19Q680.26 66.225 678.78 67.705Q677.3 69.185 675.265 69.185ZM673.415 180.0H666.5699999999999Q664.535 180.0 663.055 178.51999999999998Q661.5749999999999 177.04 661.5749999999999 175.005V88.795Q661.5749999999999 86.76 663.055 85.28Q664.535 83.8 666.5699999999999 83.8H673.415Q675.4499999999999 83.8 676.93 85.28Q678.41 86.76 678.41 88.795V175.005Q678.41 177.04 676.93 178.51999999999998Q675.4499999999999 180.0 673.415 180.0Z"/><path d="M753.665 83.8Q755.6999999999999 83.8 757.18 85.28Q758.66 86.76 758.66 88.795V94.715Q758.66 96.75 757.18 98.23Q755.6999999999999 99.71000000000001 753.665 99.71000000000001H730.17V175.005Q730.17 177.04 728.6899999999999 178.51999999999998Q727.2099999999999 180.0 725.175 180.0H718.3299999999999Q716.295 180.0 714.8149999999999 178.51999999999998Q713.3349999999999 177.04 713.3349999999999 175.005V99.71000000000001H697.795Q695.76 99.71000000000001 694.28 98.23Q692.8 96.75 692.8 94.715V88.795Q692.8 86.76 694.28 85.28Q695.76 83.8 697.795 83.8H713.3349999999999V74.55Q713.3349999999999 58.64 720.7349999999999 50.87Q728.135 43.099999999999994 743.86 43.099999999999994H755.515Q757.55 43.099999999999994 759.03 44.58Q760.51 46.06 760.51 48.095V54.015Q760.51 56.05 759.03 57.53Q757.55 59.010000000000005 755.515 59.010000000000005H745.7099999999999Q736.645 59.010000000000005 733.4075 63.265Q730.17 67.52 730.17 75.475V83.8Z"/><path d="M795.25 215.15H787.665Q785.8149999999999 215.15 784.52 213.85500000000002Q783.2249999999999 212.56 783.2249999999999 210.71Q783.2249999999999 209.97 783.41 209.415L801.17 170.75L764.54 89.535Q764.3549999999999 88.98 764.3549999999999 88.24Q764.3549999999999 86.39 765.6499999999999 85.095Q766.9449999999999 83.8 768.795 83.8H776.38Q780.0799999999999 83.8 781.7449999999999 88.24L810.2349999999999 151.14L839.0949999999999 88.24Q840.76 83.8 844.4599999999999 83.8H852.045Q853.895 83.8 855.1899999999999 85.095Q856.4849999999999 86.39 856.4849999999999 88.24Q856.4849999999999 88.98 856.3 89.535L800.6149999999999 210.71Q798.9499999999999 215.15 795.25 215.15Z"/></g></svg>
+<span class="brand-label">DOCUMENT</span></div><div class="tools"><span class="tool-label">阅读 / 汇报</span><button class="tool" data-action="appearance" aria-label="切换深浅配色" title="切换深浅配色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/></svg></button><button class="tool" data-action="print" aria-label="打印或保存 PDF" title="打印或保存 PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7ZM16 11h1"/></svg></button></div></header><main class="report"><header class="hero"><div class="eyebrow">DECISION BRIEF / 决策简报</div><h1>文档标题</h1><p class="lede">文档引言</p></header><nav class="section-nav" aria-label="章节"><a href="#chapter-1"><span class="nav-number" aria-hidden="true">01</span><span>章节1</span></a><a href="#chapter-2"><span class="nav-number" aria-hidden="true">02</span><span>章节2</span></a><a href="#chapter-3"><span class="nav-number" aria-hidden="true">03</span><span>章节3</span></a></nav><div class="chapters"><section class="chapter"><header class="chapter-header"><span class="chapter-index" aria-hidden="true">01</span><h2 id="chapter-1">章节1</h2></header><div class="chapter-body"><p>章节内容</p></div></section>
+<section class="chapter"><header class="chapter-header"><span class="chapter-index" aria-hidden="true">02</span><h2 id="chapter-2">章节2</h2></header><div class="chapter-body"><p>章节内容</p></div></section>
+<section class="chapter"><header class="chapter-header"><span class="chapter-index" aria-hidden="true">03</span><h2 id="chapter-3">章节3</h2></header><div class="chapter-body"><p>章节内容</p></div></section></div></main><footer class="footer"><span>DECISION BRIEF</span><span>观点 · 证据 · 下一步</span></footer><script>
+(() => {
+  const root = document.documentElement;
+  const kind = root.dataset.report;
+  const main = document.querySelector('main');
+  const ns = 'http://www.w3.org/2000/svg';
+  const text = (node) => node.textContent.replace(/\s+/g, ' ').trim();
+  const svgNode = (tag, attrs = {}, content) => {
+    const node = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    if (content !== undefined) node.textContent = content;
+    return node;
+  };
+  const append = (parent, tag, attrs, content) => { const node = svgNode(tag, attrs, content); parent.append(node); return node; };
+  const lines = (value, limit) => {
+    const result = []; let line = '', width = 0;
+    for (const char of value) {
+      const unit = char.codePointAt(0) > 255 ? 1 : .55;
+      if (width + unit > limit && line) { result.push(line); line = ''; width = 0; }
+      line += char; width += unit;
+    }
+    if (line) result.push(line);
+    return result;
+  };
+  const label = (parent, value, x, y, limit = 8, css = 'chart-label', attrs = {}) => {
+    const node = append(parent, 'text', { x, y, class: css, ...attrs });
+    const chunks = lines(value, limit);
+    for (let i = 0; i < chunks.length; i++) append(node, 'tspan', { x, dy: i ? 16 : 0 }, chunks[i]);
+    return chunks.length;
+  };
+  const number = (value) => {
+    const normalized = value.replace(/−/g, '-').trim();
+    const match = /^([+-]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+))\s*([%a-zA-Z\u3400-\u9fff]*)$/.exec(normalized);
+    if (!match) return null;
+    const valueNumber = Number(match[1].replaceAll(',', ''));
+    return Number.isFinite(valueNumber) ? { value: valueNumber, unit: match[2], raw: value } : null;
+  };
+  const date = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return null;
+    const [year, month, day] = match.slice(1).map(Number);
+    const ms = Date.UTC(year, month - 1, day), d = new Date(ms);
+    return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day ? ms : null;
+  };
+  const format = (value) => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(value);
+  const measurement = (title, values) => {
+    const parsed = values.map(number);
+    if (!parsed.length || parsed.some(value => !value) || new Set(parsed.map(value => value.unit)).size !== 1) return null;
+    const declared = /[（(]([^()（）]+)[）)]/.exec(title)?.[1]?.trim();
+    if ((!declared && !parsed[0].unit) || (declared && parsed[0].unit && declared !== parsed[0].unit)) return null;
+    return { title, unit: declared || parsed[0].unit, parsed };
+  };
+  const shortDate = (value) => { const d = new Date(value); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
+  const makeFigure = (title, tag) => {
+    const figure = document.createElement('figure');
+    const caption = document.createElement('figcaption'); caption.append(document.createTextNode(title));
+    const badge = document.createElement('span'); badge.className = 'chart-tag'; badge.textContent = tag;
+    caption.append(badge); figure.append(caption); return figure;
+  };
+  const makeSvg = (figure, width, height, title) => {
+    const svg = svgNode('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': title });
+    append(svg, 'title', {}, title); figure.append(svg); return svg;
+  };
+  const observe = (figure, draw) => {
+    let previous = 0, frame = 0;
+    const redraw = (force = false) => {
+      const width = Math.max(280, Math.round(figure.getBoundingClientRect().width));
+      if (!force && width === previous) return;
+      previous = width; figure.querySelector('svg')?.remove(); draw(width);
+    };
+    redraw();
+    // 在下一帧更新图形，避免在尺寸通知中再次改变容器高度。
+    new ResizeObserver(() => {
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; redraw(); });
+    }).observe(figure);
+    return () => redraw(true);
+  };
+  const rowHighlight = (group, row) => {
+    group.addEventListener('pointerenter', () => row.classList.add('is-highlighted'));
+    group.addEventListener('pointerleave', () => row.classList.remove('is-highlighted'));
+    group.addEventListener('focus', () => row.classList.add('is-highlighted'));
+    group.addEventListener('blur', () => row.classList.remove('is-highlighted'));
+  };
+  const legend = (figure, titles) => {
+    const key = document.createElement('div'); key.className = 'comparison-key';
+    titles.forEach((title, i) => {
+      const item = document.createElement('span'); item.className = `comparison-key-${i}`; item.textContent = title; key.append(item);
+    });
+    figure.append(key); return key;
+  };
+  const chartControls = (figure, title) => {
+    const bar = document.createElement('div'); bar.className = 'chart-controls';
+    bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', title); figure.append(bar); return bar;
+  };
+  const selectControl = (bar, title, entries) => {
+    const wrapper = document.createElement('label'); wrapper.append(document.createTextNode(title));
+    const select = document.createElement('select');
+    for (const [value, name] of entries) { const option = document.createElement('option'); option.value = value; option.textContent = name; select.append(option); }
+    wrapper.append(select); bar.append(wrapper); return select;
+  };
+  const resetControl = (bar, title, action) => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'chart-reset'; button.textContent = title;
+    button.addEventListener('click', action); bar.append(button); return button;
+  };
+  const chartReadout = (figure) => {
+    const output = document.createElement('output'); output.className = 'chart-readout'; output.setAttribute('aria-live', 'polite'); figure.append(output); return output;
+  };
+  // 两列共用尺度时，差值始终按后列减前列计算。
+  const comparisonPlot = (figure, columns) => {
+    const [first, second] = columns;
+    const key = legend(figure, columns.map(column => column.title));
+    const bar = chartControls(figure, '数值比较条件');
+    const order = selectControl(bar, '排序', [['source', '原文顺序'], ['gap', '差距从大到小']]); order.dataset.control = 'comparison-order';
+    const reference = selectControl(bar, '基准', [['first', first.title], ['second', second.title]]); reference.dataset.control = 'comparison-reference';
+    const view = selectControl(bar, '图形', [['endpoints', '两列对照'], ['difference', '差值分布']]); view.dataset.control = 'comparison-view';
+    const readout = chartReadout(figure);
+    const note = document.createElement('div'); note.className = 'chart-note';
+    figure.append(note);
+    const deltaUnit = first.unit === '%' ? '个百分点' : first.unit;
+    const signed = value => (value > 0 ? '+' : '') + new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 6 }).format(value) + deltaUnit;
+    const redraw = observe(figure, width => {
+      const direction = reference.value === 'first' ? 1 : -1;
+      const records = first.records.map((record, i) => ({ ...record, index: i, second: second.records[i], delta: direction * (second.records[i].value - record.value) }));
+      if (order.value === 'gap') records.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.index - b.index);
+      const largest = records.reduce((best, record) => Math.abs(record.delta) > Math.abs(best.delta) ? record : best);
+      readout.textContent = `差距最大：${largest.label} · ${signed(largest.delta)}`;
+      note.textContent = `Δ = ${direction === 1 ? second.title : first.title} − ${direction === 1 ? first.title : second.title}`;
+      const differences = view.value === 'difference';
+      key.classList.toggle('is-difference', differences);
+      figure.querySelector('figcaption').firstChild.textContent = differences ? '差值分布' : '同尺度数值对照';
+      const heights = records.map(record => Math.max(80, lines(record.label, 8).length * 16 + 34));
+      const height = heights.reduce((a, b) => a + b, 0) + 44;
+      const svg = makeSvg(figure, width, height, differences ? '差值分布' : '同尺度数值对照');
+      const extent = Math.max(...records.map(record => Math.abs(record.delta))) || 1;
+      const min = differences ? -extent : Math.min(0, ...columns.flatMap(column => column.records.map(record => record.value)));
+      const max = differences ? extent : Math.max(0, ...columns.flatMap(column => column.records.map(record => record.value)));
+      const left = Math.min(120, width * .28), right = width - 116;
+      const x = value => left + (value - min) / (max - min || 1) * (right - left);
+      append(svg, 'text', { x: width - 4, y: 15, 'text-anchor': 'end', class: 'chart-label' }, '差值 Δ');
+      for (const value of new Set([min, (min + max) / 2, max])) {
+        append(svg, 'line', { x1: x(value), x2: x(value), y1: 24, y2: height - 28, class: differences && value === 0 ? 'chart-zero' : 'chart-axis' });
+        append(svg, 'text', { x: x(value), y: height - 8, 'text-anchor': value === min ? 'start' : value === max ? 'end' : 'middle', class: 'chart-label' }, format(value) + (differences ? deltaUnit : first.unit));
+      }
+      let y = 28;
+      records.forEach((record, i) => {
+        const middle = y + heights[i] / 2 - 6, deltaText = signed(record.delta);
+        const description = `${record.label}；${first.title}：${record.raw}；${second.title}：${record.second.raw}；${note.textContent}：${deltaText}`;
+        const group = append(svg, 'g', { class: 'chart-mark comparison-mark', tabindex: 0, 'aria-label': description, 'data-label': record.label, 'data-first': record.value, 'data-second': record.second.value, 'data-delta': record.delta });
+        append(group, 'title', {}, description);
+        append(group, 'rect', { x: 0, y, width, height: heights[i], class: 'chart-hit' });
+        label(group, record.label, 0, middle - (lines(record.label, 8).length - 1) * 8);
+        if (differences) {
+          append(group, 'rect', { x: Math.min(x(0), x(record.delta)), y: middle - 10, width: Math.abs(x(record.delta) - x(0)), height: 18, rx: 3, class: 'chart-bar' });
+          append(group, 'text', { x: left, y: middle + 27, class: 'chart-label' }, `原值：${record.raw} / ${record.second.raw}`);
+        } else {
+          append(group, 'line', { x1: x(record.value), x2: x(record.second.value), y1: middle, y2: middle, class: 'comparison-link' });
+          append(group, 'circle', { cx: x(record.value), cy: middle, r: 5, class: 'comparison-first' });
+          append(group, 'circle', { cx: x(record.second.value), cy: middle, r: 5, class: 'comparison-second' });
+          append(group, 'text', { x: x(record.value), y: middle - 14, 'text-anchor': 'middle', class: 'chart-value' }, record.raw);
+          append(group, 'text', { x: x(record.second.value), y: middle + 25, 'text-anchor': 'middle', class: 'chart-value' }, record.second.raw);
+        }
+        append(group, 'text', { x: width - 4, y: middle + 4, 'text-anchor': 'end', class: 'comparison-delta' }, deltaText);
+        rowHighlight(group, record.row); y += heights[i];
+      });
+    });
+    for (const control of [order, reference, view]) control.addEventListener('change', redraw);
+    resetControl(bar, '恢复原始视图', () => { order.value = 'source'; reference.value = 'first'; view.value = 'endpoints'; redraw(); });
+  };
+  // 数值列单独使用自己的比例尺；单位不同的列不会共用一根轴。
+  const numericPlot = (figure, records, title, unit) => observe(figure, (width) => {
+    const heights = records.map((r) => Math.max(40, lines(r.label, 8).length * 16 + 18));
+    const height = heights.reduce((sum, h) => sum + h, 0) + 36;
+    const svg = makeSvg(figure, width, height, title);
+    const lo = Math.min(0, ...records.map((r) => r.value)), hi = Math.max(0, ...records.map((r) => r.value));
+    const extent = hi - lo || 1;
+    const base = Math.pow(10, Math.floor(Math.log10(extent)));
+    const step = base * (extent / base > 5 ? 2 : extent / base > 2 ? 1 : .5);
+    const min = Math.floor(lo / step) * step, max = Math.ceil(hi / step) * step || step;
+    const left = Math.min(120, width * .32), right = width - 62;
+    const x = (v) => left + (v - min) / (max - min) * (right - left);
+    for (const v of [min, (min + max) / 2, max]) {
+      append(svg, 'line', { x1: x(v), x2: x(v), y1: 8, y2: height - 27, class: v === 0 ? 'chart-zero' : 'chart-axis' });
+      append(svg, 'text', { x: x(v), y: height - 8, 'text-anchor': 'middle', class: 'chart-label' }, format(v) + unit);
+    }
+    if (min < 0 && max > 0) append(svg, 'line', { x1: x(0), x2: x(0), y1: 8, y2: height - 27, class: 'chart-zero' });
+    let y = 12;
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i], middle = y + heights[i] / 2 - 5;
+      const group = append(svg, 'g', { class: 'chart-mark', tabindex: 0, 'aria-label': `${record.label}：${record.raw}`, 'data-value': record.value });
+      append(group, 'title', {}, `${record.label}：${record.raw}`);
+      append(group, 'rect', { x: 0, y: y - 6, width, height: heights[i], class: 'chart-hit' });
+      label(group, record.label, 0, middle - (lines(record.label, 8).length - 1) * 8);
+      if (kind === 'analysis') {
+        append(group, 'line', { x1: x(0), x2: x(record.value), y1: middle - 4, y2: middle - 4, class: 'chart-stem' });
+        append(group, 'circle', { cx: x(record.value), cy: middle - 4, r: 4.5, class: 'chart-dot' });
+      } else append(group, 'rect', { x: Math.min(x(0), x(record.value)), y: middle - 12, width: Math.abs(x(record.value) - x(0)), height: 17, rx: 3, class: 'chart-bar' });
+      append(group, 'text', { x: width - 2, y: middle, 'text-anchor': 'end', class: 'chart-value' }, record.raw);
+      rowHighlight(group, record.row); y += heights[i];
+    }
+  });
+  const domain = values => {
+    const low = Math.min(...values), high = Math.max(...values), padding = (high - low || Math.abs(low) || 1) * .15;
+    return [low - padding, high + padding];
+  };
+  const plane = (figure, width, xValues, yValues, xTitle, yTitle, xUnit, yUnit, xTicks) => {
+    const limit = (width - 24) / 12, xLines = lines(xTitle, limit).length, yLines = lines(yTitle, limit).length;
+    const height = 350 + (xLines + yLines - 2) * 16, left = 74, right = width - 30, top = 30 + (yLines - 1) * 16, bottom = height - 68 - (xLines - 1) * 16;
+    const tick = value => new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 3 }).format(value);
+    const [xMin, xMax] = domain(xValues), [yMin, yMax] = domain(yValues);
+    const x = value => left + (value - xMin) / (xMax - xMin) * (right - left);
+    const y = value => bottom - (value - yMin) / (yMax - yMin) * (bottom - top);
+    const svg = makeSvg(figure, width, height, `${xTitle}；${yTitle}`);
+    for (const value of [yMin, (yMin + yMax) / 2, yMax]) {
+      append(svg, 'line', { x1: left, x2: right, y1: y(value), y2: y(value), class: 'chart-axis' });
+      append(svg, 'text', { x: left - 12, y: y(value) + 4, 'text-anchor': 'end', class: 'chart-label' }, tick(value));
+    }
+    for (const value of xTicks || [xMin, (xMin + xMax) / 2, xMax]) {
+      append(svg, 'text', { x: x(value), y: bottom + 24, 'text-anchor': 'middle', class: 'chart-label' }, tick(value));
+    }
+    append(svg, 'line', { x1: left, x2: right, y1: bottom, y2: bottom, class: 'chart-zero' });
+    label(svg, yTitle, 12, 14, limit, 'plane-axis-title');
+    label(svg, xTitle, width / 2, height - xLines * 16 + 6, limit, 'plane-axis-title', { 'text-anchor': 'middle' });
+    svg.dataset.xUnit = xUnit; svg.dataset.yUnit = yUnit;
+    return { svg, x, y };
+  };
+  const optionPlane = (figure, columns) => {
+    const [first, second] = columns;
+    const key = document.createElement('div'); key.className = 'option-key';
+    first.records.forEach((record, index) => {
+      const item = document.createElement('span'), ordinal = document.createElement('b'); ordinal.textContent = index + 1;
+      item.append(ordinal, document.createTextNode(record.label)); key.append(item);
+    });
+    figure.append(key);
+    const note = document.createElement('p'); note.className = 'chart-note'; note.textContent = '每个位置对应一行原始记录；两根轴分别保留原单位。'; figure.append(note);
+    observe(figure, width => {
+      const { svg, x, y } = plane(figure, width, first.records.map(r => r.value), second.records.map(r => r.value), first.title, second.title, first.unit, second.unit);
+      first.records.forEach((record, index) => {
+        const other = second.records[index], px = x(record.value), py = y(other.value);
+        const matches = first.records.flatMap((item, i) => item.value === record.value && second.records[i].value === other.value ? [i] : []);
+        if (matches[0] !== index) return;
+        const ordinals = matches.map(i => i + 1).join('·'), names = matches.map(i => first.records[i].label).join('、');
+        const group = append(svg, 'g', { class: 'option-point', tabindex: 0, 'data-label': names, 'data-x': record.value, 'data-y': other.value, 'aria-label': `${names}；${first.title}：${record.raw}；${second.title}：${other.raw}` });
+        append(group, 'title', {}, group.getAttribute('aria-label'));
+        append(group, 'circle', { cx: px, cy: py, r: Math.max(10, ordinals.length * 4), class: 'option-dot' });
+        append(group, 'text', { x: px, y: py + 4, 'text-anchor': 'middle', class: 'option-ordinal' }, ordinals);
+        matches.forEach(i => rowHighlight(group, first.records[i].row));
+      });
+    });
+  };
+  const sampleProfile = (figure, horizontal, columns) => {
+    legend(figure, columns.map(column => column.title));
+    const note = document.createElement('p'); note.className = 'chart-note'; note.textContent = '连线只连接已记录的样本点。'; figure.append(note);
+    observe(figure, width => {
+      const xValues = horizontal.parsed.map(v => v.value);
+      const ticks = [...new Set(xValues)].sort((a,b) => a-b);
+      const { svg, x, y } = plane(figure, width, xValues, columns.flatMap(column => column.records.map(r => r.value)), horizontal.title, columns[0].unit, horizontal.unit, columns[0].unit, ticks);
+      columns.forEach((column, series) => {
+        const records = column.records.map((record, index) => ({ ...record, xValue: horizontal.parsed[index].value })).sort((a, b) => a.xValue - b.xValue);
+        const group = append(svg, 'g', { class: `sample-series sample-series-${series}`, 'data-series': column.title });
+        append(group, 'polyline', { points: records.map(record => `${x(record.xValue)},${y(record.value)}`).join(' '), class: 'sample-trace' });
+        for (const record of records) {
+          const point = append(group, 'g', { class: 'sample-point', tabindex: 0, 'data-x': record.xValue, 'data-y': record.value, 'aria-label': `${horizontal.title}：${record.label}；${column.title}：${record.raw}` });
+          append(point, 'title', {}, point.getAttribute('aria-label'));
+          append(point, 'circle', { cx: x(record.xValue), cy: y(record.value), r: 5, class: 'sample-dot' }); rowHighlight(point, record.row);
+        }
+      });
+    });
+  };
+  const intervalPlot = (figure, records, title) => {
+    const min = Math.min(...records.map((r) => r.start)), max = Math.max(...records.map((r) => r.end));
+    const bar = chartControls(figure, '按日期查看区间');
+    bar.hidden = min === max;
+    const wrapper = document.createElement('label'); wrapper.className = 'date-control'; wrapper.append(document.createTextNode('查看日期'));
+    const range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = String((max - min) / 86400000); range.step = '1'; range.value = '0'; range.disabled = min === max; range.dataset.control = 'interval-date';
+    wrapper.append(range); bar.append(wrapper);
+    const readout = chartReadout(figure);
+    const note = document.createElement('div'); note.className = 'chart-note'; note.textContent = '起止日均包含；查询的是日期覆盖，不表示完成情况。'; figure.append(note);
+    let selected = null;
+    const redraw = observe(figure, width => {
+      const matches = records.filter(record => selected !== null && record.start <= selected && record.end >= selected);
+      const day = new Date(selected ?? min).toISOString().slice(0, 10); range.setAttribute('aria-valuetext', day);
+      readout.textContent = selected === null ? '拖动日期，查看当天覆盖哪些区间。' : `${day} · ${matches.length} 个区间覆盖${matches.length ? '：' + matches.map(record => record.label).join('、') : ''}`;
+      const heights = records.map(r => Math.max(60, lines(r.label, 8).length * 16 + 28));
+      const height = heights.reduce((a, b) => a + b, 0) + 42;
+      const svg = makeSvg(figure, width, height, title);
+      const left = Math.min(130, width * .34), right = width - 10;
+      const x = value => left + (value - min) / (max - min || 86400000) * (right - left);
+      for (const value of new Set([min, min + (max - min) / 2, max])) {
+        append(svg, 'line', { x1: x(value), x2: x(value), y1: 8, y2: height - 27, class: 'chart-axis' });
+        append(svg, 'text', { x: x(value), y: height - 8, 'text-anchor': value === max ? 'end' : value === min ? 'start' : 'middle', class: 'chart-label' }, shortDate(value));
+      }
+      let y = 10;
+      for (let i = 0; i < records.length; i++) {
+        const record = records[i], middle = y + heights[i] / 2 - 10, covered = matches.includes(record);
+        record.row.classList.toggle('is-date-match', covered);
+        const group = append(svg, 'g', { tabindex: 0, class: `chart-mark${covered ? ' is-date-match' : ''}`, 'aria-label': `${record.label}：${record.startText}至${record.endText}` });
+        append(group, 'title', {}, `${record.label}：${record.startText}至${record.endText}`);
+        append(group, 'rect', { x: 0, y, width, height: heights[i], class: 'chart-hit' });
+        label(group, record.label, 0, middle);
+        if (record.start === record.end) append(group, 'circle', { cx: x(record.start), cy: middle - 4, r: 4, class: 'chart-bar' });
+        else append(group, 'rect', { x: x(record.start), y: middle - 12, width: x(record.end) - x(record.start), height: 17, rx: 3, class: 'chart-bar' });
+        append(group, 'text', { x: x(record.start), y: middle + 20, class: 'chart-label' }, `${shortDate(record.start)} — ${shortDate(record.end)}`);
+        rowHighlight(group, record.row); y += heights[i];
+      }
+      if (selected !== null) append(svg, 'line', { x1: x(selected), x2: x(selected), y1: 8, y2: height - 27, class: 'date-cursor' });
+    });
+    range.addEventListener('input', () => { selected = min + Number(range.value) * 86400000; redraw(); });
+    resetControl(bar, '清除定位', () => { selected = min === max ? min : null; range.value = '0'; redraw(); });
+    if (min === max) { selected = min; redraw(); }
+  };
+  for (const table of main.querySelectorAll('table')) {
+    const headers = [...(table.tHead?.rows[0]?.cells || [])].map(text);
+    const rows = [...(table.tBodies[0]?.rows || [])];
+    const scroll = document.createElement('div'); scroll.className = 'table-scroll'; table.before(scroll); scroll.append(table);
+    if (headers.length < 2 || !rows.length) continue;
+    const values = rows.map((row) => [...row.cells].map(text));
+    const startColumn = headers.findIndex((h) => /^(开始|起始|开始日期|起始日期|start)$/i.test(h));
+    const endColumn = headers.findIndex((h) => /^(结束|截止|结束日期|截止日期|end)$/i.test(h));
+    const intervals = startColumn > 0 && endColumn > 0 ? values.map((cells, i) => ({ label: cells[0], start: date(cells[startColumn]), end: date(cells[endColumn]), startText: cells[startColumn], endText: cells[endColumn], row: rows[i] })) : [];
+    const numeric = headers.slice(1).flatMap((title, k) => {
+      const column = measurement(title, values.map(cells => cells[k + 1] || ''));
+      return column ? [{ title, unit: column.unit, records: column.parsed.map((v, i) => ({ ...v, label: values[i][0], row: rows[i] })) }] : [];
+    });
+    const dated = intervals.length && intervals.every((r) => r.start !== null && r.end !== null && r.end >= r.start);
+    if (!dated && !numeric.length) continue;
+    const box = document.createElement('div'); box.className = 'data-viz';
+    const plots = document.createElement('div'); plots.className = 'plots'; box.append(plots); scroll.before(box); box.append(scroll);
+    if (!dated && rows.length >= 2 && rows.length <= 12) {
+      if (kind === 'decision' && numeric.length === 2 && numeric[0].unit !== numeric[1].unit) {
+        const figure = makeFigure('双指标位置', headers[0]); figure.className = 'option-plane'; plots.append(figure); optionPlane(figure, numeric);
+      }
+      const horizontal = measurement(headers[0], values.map(cells => cells[0]));
+      if (kind === 'analysis' && horizontal && numeric.length && numeric.length <= 3 && new Set(numeric.map(column => column.unit)).size === 1) {
+        const figure = makeFigure('样本剖面', headers[0]); figure.className = 'sample-profile'; plots.append(figure); sampleProfile(figure, horizontal, numeric);
+      }
+    }
+    if (dated) {
+      const figure = makeFigure('起止日期', headers[0]); plots.append(figure); intervalPlot(figure, intervals, '起止日期');
+    } else if (numeric.length === 2 && numeric[0].unit === numeric[1].unit) {
+      const figure = makeFigure('同尺度数值对照', headers[0]); figure.className = 'comparison-figure'; plots.append(figure); comparisonPlot(figure, numeric);
+    } else for (const column of numeric) {
+      const figure = makeFigure(column.title, headers[0]); plots.append(figure); numericPlot(figure, column.records, column.title, column.unit);
+    }
+  }
+  const listFigure = (list, title, tag, className) => {
+    const box = document.createElement('div'); box.className = `data-viz ${className}`; list.before(box);
+    const figure = makeFigure(title, tag); box.append(figure);
+    const source = document.createElement('details'); source.className = 'viz-source';
+    const summary = document.createElement('summary'); summary.textContent = '查看原文列表'; source.append(summary, list); box.append(source);
+    return figure;
+  };
+  const ownText = (item) => {
+    const copy = item.cloneNode(true);
+    for (const list of copy.querySelectorAll('ul,ol')) list.remove();
+    return text(copy);
+  };
+  for (const list of main.querySelectorAll('.chapter-body > ul')) {
+    if (!list.querySelector('ul') || list.querySelector('ol')) continue;
+    const nodes = [];
+    const read = (list, depth = 0, parent = null) => [...list.children].filter(el => el.tagName === 'LI').map(item => {
+      const node = { label: ownText(item), item, depth, parent, index: nodes.length }; nodes.push(node);
+      node.children = [...item.children].filter(el => el.tagName === 'UL').flatMap(child => read(child, depth + 1, node));
+      return node;
+    });
+    const roots = read(list);
+    if (nodes.length > 32 || nodes.some(node => !node.label)) continue;
+    const figure = listFigure(list, '列表层级', '原文缩进关系', 'hierarchy-viz');
+    const bar = chartControls(figure, '查看列表关系');
+    const picker = selectControl(bar, '查看条目', [['', '全部关系'], ...nodes.map(node => [String(node.index), '　'.repeat(node.depth) + node.label])]); picker.dataset.control = 'hierarchy-node';
+    const readout = chartReadout(figure);
+    let selected = null;
+    const applySelection = () => {
+      const related = new Set();
+      const descendants = node => { related.add(node); node.children.forEach(descendants); };
+      if (selected) {
+        descendants(selected);
+        for (let parent = selected.parent; parent; parent = parent.parent) related.add(parent);
+      }
+      for (const node of nodes) {
+        node.group.classList.toggle('is-muted', selected !== null && !related.has(node));
+        node.group.classList.toggle('is-selected', selected === node); node.group.setAttribute('aria-pressed', String(selected === node));
+        node.item.classList.toggle('is-tree-match', selected !== null && related.has(node));
+        node.edge?.classList.toggle('is-muted', selected !== null && !related.has(node));
+        node.edge?.classList.toggle('is-related', selected !== null && related.has(node));
+      }
+      const path = [];
+      for (let node = selected; node; node = node.parent) path.unshift(node.label);
+      readout.textContent = selected ? `路径：${path.join(' › ')} · ${nodes.filter(node => node !== selected && related.has(node) && node.depth > selected.depth).length} 个子条目` : '点选节点，查看它的父子路径；按 Esc 恢复全部关系。';
+      picker.value = selected ? String(selected.index) : '';
+    };
+    const selectNode = node => { selected = node; applySelection(); };
+    picker.addEventListener('change', () => selectNode(picker.value === '' ? null : nodes[Number(picker.value)]));
+    resetControl(bar, '查看全部关系', () => selectNode(null));
+    observe(figure, available => {
+      const depth = Math.max(...nodes.map(node => node.depth));
+      const width = Math.max(available, (depth + 1) * 160 + depth * 36);
+      const cardWidth = (width - depth * 36) / (depth + 1), limit = (cardWidth - 32) / 14;
+      const measure = node => {
+        node.cardHeight = Math.max(60, lines(node.label, limit).length * 16 + 30);
+        node.span = Math.max(node.cardHeight, node.children.reduce((sum, child) => sum + measure(child), 0) + Math.max(0, node.children.length - 1) * 14);
+        return node.span;
+      };
+      const height = roots.reduce((sum, node) => sum + measure(node), 0) + (roots.length - 1) * 24 + 4;
+      const svg = makeSvg(figure, width, height, '列表层级：连线表示原文中的父子条目'); svg.style.minWidth = width + 'px';
+      svg.setAttribute('role', 'group');
+      const place = (node, top) => {
+        node.x = node.depth * (cardWidth + 36); node.y = top + (node.span - node.cardHeight) / 2;
+        let childTop = top;
+        for (const child of node.children) { place(child, childTop); childTop += child.span + 14; }
+      };
+      let top = 2;
+      for (const node of roots) { place(node, top); top += node.span + 24; }
+      for (const node of nodes.filter(node => node.parent)) {
+        const x1 = node.parent.x + cardWidth, y1 = node.parent.y + node.parent.cardHeight / 2, x2 = node.x, y2 = node.y + node.cardHeight / 2;
+        node.edge = append(svg, 'path', { d: `M${x1},${y1} C${x1 + 18},${y1} ${x2 - 18},${y2} ${x2},${y2}`, class: 'hierarchy-edge', 'data-parent': node.parent.label, 'data-child': node.label });
+      }
+      for (const node of nodes) {
+        const description = node.parent ? `父条目：${node.parent.label}；条目：${node.label}` : node.label;
+        const group = append(svg, 'g', { class: 'hierarchy-node', role: 'button', tabindex: 0, 'aria-label': description, 'data-label': node.label }); node.group = group;
+        append(group, 'title', {}, description);
+        append(group, 'rect', { x: node.x + 1, y: node.y, width: cardWidth - 2, height: node.cardHeight, rx: 7, class: node.parent ? 'hierarchy-card' : 'hierarchy-card hierarchy-parent' });
+        label(group, node.label, node.x + 16, node.y + 25, limit, 'structure-label'); rowHighlight(group, node.item);
+        group.addEventListener('click', () => selectNode(node));
+        group.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectNode(node); }
+          if (event.key === 'Escape') { event.preventDefault(); selectNode(null); }
+        });
+      }
+      applySelection();
+    });
+  }
+  if (kind === 'review') for (const list of main.querySelectorAll('.chapter-body > ol')) {
+    const items = [...list.children].filter(el => el.tagName === 'LI');
+    if (items.length < 2 || items.length > 12 || list.querySelector('ul,ol')) continue;
+    let ordinal = list.hasAttribute('start') ? list.start : list.reversed ? items.length : 1;
+    const ordinals = items.map(item => {
+      if (item.hasAttribute('value')) ordinal = item.value;
+      const value = ordinal; ordinal += list.reversed ? -1 : 1; return value;
+    });
+    const figure = listFigure(list, '步骤顺序', '按原文次序', 'sequence-viz');
+    const content = items.map(item => {
+      const full = text(item), strong = item.querySelector('strong');
+      const title = strong && full.startsWith(text(strong)) ? text(strong) : '';
+      return { title, body: title ? full.slice(title.length).trim() : full };
+    });
+    observe(figure, (width) => {
+      const horizontal = items.length <= 5 && width >= items.length * 190 + (items.length - 1) * 28;
+      const cardWidth = horizontal ? (width - 2 - (items.length - 1) * 28) / items.length : width - 2;
+      const limit = (cardWidth - 36) / 14;
+      const heights = content.map(item => Math.max(112, (lines(item.title, limit).length + lines(item.body, limit).length) * 16 + 58 + (item.title ? 8 : 0)));
+      const height = horizontal ? Math.max(...heights) + 4 : heights.reduce((a, b) => a + b, 0) + (items.length - 1) * 28 + 4;
+      const svg = makeSvg(figure, width, height, '步骤顺序');
+      let y = 2;
+      items.forEach((item, i) => {
+        const x = horizontal ? i * (cardWidth + 28) + 1 : 1, cardHeight = horizontal ? height - 4 : heights[i];
+        if (i) {
+          const edge = horizontal ? `M${x - 24},${height / 2} h20 m-5,-5 l5,5 -5,5` : `M${width / 2},${y - 24} v20 m-5,-5 l5,5 5,-5`;
+          append(svg, 'path', { d: edge, class: 'step-link' });
+        }
+        const group = append(svg, 'g', { class: 'flow-node', tabindex: 0, 'aria-label': `${ordinals[i]}. ${text(item)}` });
+        append(group, 'title', {}, `${ordinals[i]}. ${text(item)}`);
+        append(group, 'rect', { x, y, width: cardWidth, height: cardHeight, rx: 7, class: 'step-card' });
+        append(group, 'circle', { cx: x + 28, cy: y + 25, r: 13, class: 'step-dot' });
+        append(group, 'text', { x: x + 28, y: y + 29, 'text-anchor': 'middle', class: 'step-number' }, ordinals[i]);
+        const titleLines = content[i].title ? label(group, content[i].title, x + 18, y + 59, limit, 'structure-label step-title') : 0;
+        label(group, content[i].body, x + 18, y + 59 + (titleLines ? titleLines * 16 + 8 : 0), limit, 'structure-label'); rowHighlight(group, item);
+        if (!horizontal) y += cardHeight + 28;
+      });
+    });
+  }
+  [...main.querySelectorAll('.chapter')].forEach((chapter, i) => { const number = chapter.querySelector('.chapter-index'); if (number) number.textContent = String(i + 1).padStart(2, '0'); });
+  [...document.querySelectorAll('.section-nav a')].forEach((link, i) => { const number = link.querySelector('.nav-number'); if (number) number.textContent = String(i + 1).padStart(2, '0'); });
+  const links = [...document.querySelectorAll('.section-nav a')];
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) if (entry.isIntersecting) for (const link of links) link.setAttribute('aria-current', String(link.hash === '#' + entry.target.id));
+  }, { rootMargin: '-10% 0px -60% 0px' });
+  for (const heading of main.querySelectorAll('h2[id]')) observer.observe(heading);
+  let printSources = null;
+  window.addEventListener('beforeprint', () => {
+    if (printSources) return;
+    printSources = [...main.querySelectorAll('.viz-source')].map(source => [source, source.open]);
+    for (const [source] of printSources) source.open = true;
+  });
+  window.addEventListener('afterprint', () => {
+    for (const [source, open] of printSources || []) source.open = open;
+    printSources = null;
+  });
+  document.querySelector('[data-action="appearance"]')?.addEventListener('click', () => { root.dataset.appearance = root.dataset.appearance === 'dark' ? 'light' : 'dark'; });
+  document.querySelector('[data-action="print"]')?.addEventListener('click', () => window.print());
+})();
+
+(() => {
+  const main = document.querySelector('main');
+  const family = document.documentElement.dataset.report;
+  const ns = 'http://www.w3.org/2000/svg';
+  const text = node => node.textContent.replace(/\s+/g, ' ').trim();
+  const svgNode = (tag, attrs) => {
+    const node = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    return node;
+  };
+  const diagram = (source, caption, kind) => {
+    const figure = document.createElement('figure'); figure.className = `content-graph ${kind}`;
+    const heading = document.createElement('figcaption'); heading.textContent = caption;
+    const stage = document.createElement('div'); stage.className = 'content-graph-stage';
+    source.before(figure); stage.append(source); figure.append(heading, stage);
+    return stage;
+  };
+  // Keep the source nodes and draw connectors behind their measured positions.
+  const connect = (stage, pairs) => {
+    const svg = svgNode('svg', { class: 'content-wires', 'aria-hidden': 'true' }); stage.prepend(svg);
+    let frame = 0;
+    const draw = () => {
+      frame = 0;
+      const box = stage.getBoundingClientRect();
+      svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`); svg.replaceChildren();
+      for (const { from, to, field } of pairs) {
+        const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+        let x1 = a.right - box.left, y1 = a.top + a.height / 2 - box.top;
+        let x2 = b.left - box.left, y2 = b.top + b.height / 2 - box.top;
+        const gap = (x2 - x1) * .6;
+        let pathData = `M${x1},${y1} C${x1 + gap},${y1} ${x2 - gap},${y2} ${x2},${y2}`;
+        if (family === 'decision') {
+          x1 = a.left - box.left;
+          pathData = `M${x1},${y1} H${x1 - 8} V${y2} H${x2}`;
+        } else if (family === 'review') {
+          x2 = b.left + b.width / 2 - box.left; y2 = b.top - box.top;
+          const railY = Math.min(a.top, b.top) - box.top - 9;
+          pathData = `M${x1},${y1} H${x1 + 12} V${railY} H${x2} V${y2}`;
+        }
+        const path = svgNode('path', { d: pathData, 'data-from': text(from), 'data-to': text(to), 'data-field': field });
+        svg.append(path, svgNode('circle', { cx: x2, cy: y2, r: 2.5 }));
+      }
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(draw); };
+    new ResizeObserver(schedule).observe(stage); document.fonts.ready.then(schedule);
+    window.addEventListener('beforeprint', draw); window.addEventListener('afterprint', schedule); draw();
+  };
+  for (const table of main.querySelectorAll('table')) {
+    if (table.closest('.data-viz') || table.querySelector('img,svg,pre,table,kbd,[rowspan],[colspan]')) continue;
+    const headers = [...(table.tHead?.rows[0]?.cells || [])].map(text);
+    const rows = [...(table.tBodies[0]?.rows || [])];
+    if (headers.length < 2 || headers.length > 4 || rows.length < 2 || rows.length > 12 || table.tBodies.length !== 1 || (family === 'decision' && rows.length > 4)) continue;
+    // Measurements, dates and missing cells stay with the existing table/plot views.
+    if (rows.some(row => row.cells.length !== headers.length || [...row.cells].some(cell => !text(cell) || /^[-+−]?\d|^—$/.test(text(cell)) || /!\[/.test(text(cell))) || text(row.cells[0]).length > 160 || [...row.cells].slice(1).some(cell => text(cell).length < 4))) continue;
+    const source = table.closest('.table-scroll') || table;
+    const stage = diagram(source, headers.join(' · '), 'attribute-graph');
+    source.classList.add('graph-table'); table.dataset.graphColumns = headers.length;
+    table.style.setProperty('--fields', headers.length - 1);
+    if (family === 'decision') {
+      table.style.setProperty('--options', rows.length);
+      [...table.tHead.rows[0].cells].forEach((cell, column) => { cell.style.gridColumn = 1; cell.style.gridRow = column + 1; });
+    }
+    const pairs = [];
+    rows.forEach((row, index) => {
+      row.classList.add('attribute-group');
+      [...row.cells].forEach((cell, column) => {
+        cell.classList.add(column ? 'attribute-note' : 'attribute-key');
+        cell.dataset.field = headers[column];
+        if (family === 'decision') { cell.style.gridColumn = index + 2; cell.style.gridRow = column + 1; }
+        if (column) pairs.push({ from: row.cells[0], to: cell, field: headers[column] });
+      });
+    });
+    connect(stage, pairs);
+  }
+  for (const list of main.querySelectorAll('.chapter-body > ul')) {
+    const items = [...list.children].filter(node => node.tagName === 'LI');
+    if (list.querySelector('ul,ol,img,svg,pre') || items.length < 2 || items.length > 12) continue;
+    const entries = items.map(item => {
+      const key = item.firstElementChild;
+      if (!key?.matches('strong,code') || !text(key) || text(key).length > 120) return null;
+      const prefix = document.createRange(); prefix.selectNodeContents(item); prefix.setEndBefore(key);
+      if (prefix.toString().trim()) return null;
+      const rest = document.createRange(); rest.selectNodeContents(item); rest.setStartAfter(key);
+      if (rest.toString().trim().length < 12) return null;
+      return { item, key };
+    });
+    if (entries.some(entry => !entry)) continue;
+    const stage = diagram(list, '条目与说明', 'statement-graph'); list.classList.add('statement-list');
+    const pairs = [];
+    for (const { item, key } of entries) {
+      const rest = document.createRange(); rest.selectNodeContents(item); rest.setStartAfter(key);
+      const body = document.createElement('div'); body.className = 'statement-note'; body.append(rest.extractContents());
+      const keyBox = document.createElement('div'); keyBox.className = 'statement-key'; key.before(keyBox); keyBox.append(key);
+      item.append(body); pairs.push({ from: keyBox, to: body, field: '同一条目中的说明' });
+    }
+    connect(stage, pairs);
+  }
+})();
+
+</script></body></html>

@@ -215,6 +215,17 @@ jobs:
         env:
           ARCHIFY_CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
           ARCHIFY_CHROME_NO_SANDBOX: '1'
+      - name: Standard MCP document tool contract
+        if: needs.scope.outputs.browser == 'true'
+        run: |
+          if [ "$MCP_SHARD" = 2 ]; then
+            npm --prefix integrations/mcp ci --ignore-scripts --no-audit --no-fund
+            npm --prefix integrations/mcp test
+          fi
+        env:
+          MCP_SHARD: ${{ matrix.shard }}
+          ARCHIFY_CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
+          ARCHIFY_CHROME_NO_SANDBOX: '1'
 
   webm-decode:
     needs: scope

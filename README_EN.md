@@ -254,6 +254,21 @@ Put supporting detail in cards instead of adding more edges.
 
 Continue with focused requests such as `add Redis`, `move auth to the left`, or `highlight the rollback path`. Archify keeps the typed source available for targeted iteration.
 
+## Markdown documents
+
+Render ordinary Markdown using any supplied HTML design, or choose one of three
+report templates for decisions, analysis and retrospectives:
+
+```bash
+node archify/bin/archify.mjs document report.md report.html --design design.html --json
+node archify/bin/archify.mjs document report.md report.html --template review/static --json
+```
+
+The same renderer is available through an agent-neutral JSON tool and MCP.
+Optional paragraph marks let an AI call six native SVG components by editing
+Markdown. See [document rendering](archify/document/README.md) and
+[component choices](archify/references/document-components.md). Rendering requires local Chrome.
+
 ## Choose the right diagram
 
 <details>

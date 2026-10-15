@@ -19,6 +19,8 @@
     "generate:validators": "node scripts/generate-validators.mjs",
     "check:validators": "node scripts/generate-validators.mjs --check",
     "check:release-identity": "node ../scripts/check-release-identity.mjs",
+    "generate:documents": "node ../scripts/generate-document-entities.mjs && node document/designs/build.mjs && node document/designs/components/build.mjs",
+    "check:documents": "node ../scripts/generate-document-entities.mjs --check && node document/designs/build.mjs --check && node document/designs/components/build.mjs --check",
     "build:gallery": "node ../scripts/build-gallery.mjs ../docs",
     "build:guide": "node ../scripts/build-guide.mjs ../docs/guide.html",
     "build:start": "node ../scripts/build-start.mjs ../docs/start.html",

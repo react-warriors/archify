@@ -1,6 +1,6 @@
 ---
 name: archify
-description: "Create validated architecture, workflow, sequence, data-flow, lifecycle/state, entity-relationship, class/interface, tree, timeline, and execution waterfall diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional motion, and image/SVG/WebM export. Accept plain-language requirements or Mermaid; inspect repository evidence for code-backed diagrams. Use when visualizing infrastructure, cloud/security networks, API calls, data pipelines, ETL/ELT, state machines, database schemas, class contracts, module hierarchies, incident/release histories, or request and agent-run timings. Also use for everyday subjects with steps, parts, relationships, or states: leave and travel plans, applications and approvals, renting conversations, money or document flows, and order progress. Not for numeric charts or dashboards."
+description: "Create validated architecture, workflow, sequence, data-flow, lifecycle/state, entity-relationship, class/interface, tree, timeline and execution waterfall diagrams as explorable standalone HTML with SVG and export. Render Markdown using any supplied HTML design or three built-in report layouts, with optional native document components. Use when visualizing systems, code-backed architecture, everyday processes, reviews, analysis, decision briefs or styled Markdown answers. Accept natural language, Mermaid or typed diagram JSON. Document figures use supplied values; this is not a general dashboard builder."
 license: MIT
 metadata:
   version: "3.1"
@@ -9,7 +9,24 @@ metadata:
 
 # Archify
 
-Create an interactive HTML diagram from typed JSON.
+Create an interactive diagram from typed JSON, or render Markdown using any HTML design.
+
+For Markdown documents or styled answers, read [Document presentation](references/document-presentation.md). When asked for an HTML answer, pass your answer directly as `markdown` to `render_markdown`, using the user's HTML or a selected template, and return the saved HTML. `list_document_templates` discovers built-in designs and reusable user templates; the reference covers saving and naming them. Deliver the renderer's returned result; rendering checks belong to the renderer.
+
+Native document components can present a local relationship or sequence:
+
+| Component | What it presents |
+| --- | --- |
+| `regions` | Connected content across two grouped regions |
+| `converge` | Two paragraphs connect to one shared paragraph |
+| `branch` | Three main steps with a side branch from the second |
+| `lanes` | Four ordered steps alternate across two regions |
+| `decompose` | One paragraph expands into two explanations and four details |
+| `return` | Three short stages, a return path and a wait branch |
+
+When selecting one of these components, read [Document components](references/document-components.md) for placement marks and invocation. Components use the same document renderer; ordinary Markdown rendering does not require this reference.
+
+For standalone diagrams, use the typed JSON workflow below.
 
 Run commands from your working directory. Unless the user names another location, give each new diagram request its own folder `.archify/<type>-<slug>-<YYYYMMDD-HHMMSS>/` there (local time, chosen once when the request starts): keep `candidate.json` and `<slug>.html` in it, set `meta.output` to that HTML path relative to the working directory, and reuse the folder for every repair rerun. A later request gets a new folder, so earlier versions stay intact. Replace `bin/archify.mjs` in the commands below with the installed package's absolute path, or its path relative to your working directory; input and output paths resolve from that working directory.
 

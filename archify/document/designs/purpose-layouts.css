@@ -1,0 +1,46 @@
+/* Each report uses the same source blocks with a different reading composition. */
+.option-plane,.sample-profile{grid-column:1/-1;padding-bottom:12px;margin-bottom:8px!important;border-bottom:1px solid var(--line)}
+.sample-profile .comparison-key-2:before{border-style:dashed}
+.plane-axis-title{fill:var(--muted);font-size:12px}.option-key{display:flex;flex-wrap:wrap;gap:12px 26px;margin:2px 0 13px;font-size:13px;color:var(--ink)}.option-key span{display:flex;align-items:baseline;gap:9px;overflow-wrap:anywhere}.option-key b{font-size:11px;font-weight:600;color:var(--accent)}.option-dot{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}.option-ordinal{fill:var(--accent);font-size:11px;font-weight:650}.option-point:focus,.sample-point:focus{outline:none}.option-point:hover .option-dot,.option-point:focus .option-dot{fill:var(--soft);stroke-width:2.5}.sample-trace{fill:none;stroke:var(--muted);stroke-width:1.8}.sample-dot{fill:var(--surface);stroke:var(--muted);stroke-width:2}.sample-series-1 .sample-trace{stroke:var(--accent)}.sample-series-1 .sample-dot{stroke:var(--accent);fill:var(--accent)}.sample-series-2 .sample-trace{stroke-dasharray:5 4}.sample-point:hover .sample-dot,.sample-point:focus .sample-dot{stroke-width:3.5}.report .chart-note{font-size:11px;line-height:1.7;margin:0 0 15px}
+
+/* Decision: one prominent opening, then parallel evidence and clear next steps. */
+.decision .chapters{grid-template-columns:1fr}
+.decision .chapter:first-child .chapter-body>blockquote{background:none;border:0;border-bottom:1px solid var(--line);padding:0 0 24px;font:500 25px/1.7 var(--serif);margin:0 0 26px;max-width:none}
+.decision .chapter-body>p:has(>strong:first-child)>strong:first-child{display:block;font-size:18px;line-height:1.7;margin-bottom:8px}
+.decision .chapter-body>ul:not(:has(ul,ol)){list-style:none;padding:0;margin:22px 0;display:grid;gap:12px}.decision .chapter-body>ul:not(:has(ul,ol))>li{border-left:2px solid var(--accent);padding:5px 0 5px 18px}
+.decision .chapter-body>ol{padding-left:29px;border-left:1px solid var(--line);margin-left:8px}.decision .chapter-body>ol>li{padding:7px 0 12px 8px}
+.decision .graph-table table{display:grid;grid-template-columns:minmax(70px,.55fr) repeat(var(--options),minmax(0,1fr));gap:20px 18px;align-items:stretch}
+.decision .graph-table thead,.decision .graph-table thead tr,.decision .graph-table tbody,.decision .graph-table .attribute-group{display:contents;position:static;width:auto;height:auto;overflow:visible;clip-path:none}
+.decision .graph-table th{background:none;border:0;padding:13px 8px 13px 0;align-self:center;font-size:11px;overflow-wrap:anywhere}
+.decision .graph-table .attribute-key{justify-self:stretch;align-self:start;display:flex;align-items:center;justify-content:center;padding:12px 16px;min-height:48px}
+.decision .graph-table .attribute-note{margin-top:14px}.decision .graph-table .attribute-note:before{display:none}
+.decision .content-graph{padding:20px 0}.decision .content-wires{opacity:.6}
+
+/* Analysis: connected observations stay beside their complete explanations. */
+.analysis .chapter-body>blockquote{font-size:19px;color:var(--ink);line-height:1.8;padding:10px 22px}
+.analysis .chapter-body>pre{background:var(--surface);border-left:3px solid var(--plot);padding:20px 24px}
+.analysis .graph-table tbody,.analysis .graph-table [data-graph-columns] tbody{display:grid;grid-template-columns:1fr;gap:24px}
+.analysis .graph-table .attribute-group,.analysis .graph-table [data-graph-columns] .attribute-group{display:grid;grid-template-columns:minmax(140px,.4fr) minmax(0,1fr);gap:18px 48px}
+.analysis .graph-table .attribute-key{grid-column:1;grid-row:1/span var(--fields);align-self:center;justify-self:stretch;text-align:left;font-size:13px}
+.analysis .graph-table .attribute-note{grid-column:2}
+.analysis .content-graph .statement-list{display:grid;grid-template-columns:1fr;gap:22px}
+.analysis .content-graph .statement-list>li{display:grid;grid-template-columns:minmax(140px,.4fr) minmax(0,1fr);gap:48px;align-items:center}
+.analysis .statement-key{align-self:center;text-align:left}.analysis .statement-note{align-self:center}
+
+/* Review: the complete body follows the authored record order, with no inferred dates. */
+.review .chapters{padding-left:28px;border-left:1px solid var(--line);margin-left:16px}
+.review .chapter{margin-bottom:30px;border-radius:9px;padding:29px 32px 32px}
+.review .chapter-index{position:absolute;left:-46px;top:29px;width:32px;background:var(--paper);color:var(--accent);border:1px solid var(--line)}
+.review .chapter-header{margin-bottom:25px}.review .chapter-body>blockquote{padding:9px 20px 12px;border-left:2px solid var(--accent);font-size:20px;line-height:1.8;color:var(--ink);margin:20px 0 28px}
+.review .chapter-body>p:has(>strong:first-child){background:var(--soft);padding:18px 22px;border-radius:6px;margin:22px 0;font-size:15px;line-height:1.9}
+.review .chapter-body>ul:not(:has(ul,ol)){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));list-style:none;gap:18px;padding:0;margin:24px 0}
+.review .chapter-body>ul:not(:has(ul,ol))>li{padding:16px 19px;border-top:2px solid var(--plot);background:var(--soft);border-radius:0 0 6px 6px}
+.review .graph-table tbody,.review .graph-table [data-graph-columns] tbody{display:grid;grid-template-columns:1fr;gap:22px}
+.review .graph-table .attribute-group,.review .graph-table [data-graph-columns] .attribute-group{display:grid;grid-template-columns:minmax(130px,.32fr) repeat(3,minmax(0,1fr));gap:24px 40px;align-items:center}
+.review .graph-table [data-graph-columns="2"] .attribute-group{grid-template-columns:minmax(130px,.32fr) minmax(0,1fr)}
+.review .graph-table [data-graph-columns="3"] .attribute-group{grid-template-columns:minmax(130px,.32fr) repeat(2,minmax(0,1fr))}
+.review .graph-table .attribute-key{grid-column:1;justify-self:stretch;align-self:center;text-align:left;font-size:13px;padding:12px 16px}
+.review .content-graph .statement-list{display:grid;grid-template-columns:1fr;gap:22px}
+.review .content-graph .statement-list>li{display:grid;grid-template-columns:minmax(130px,.32fr) minmax(0,1fr);gap:40px;align-items:center}
+.review .statement-key{align-self:center;text-align:left}.review .statement-note{align-self:center}.review .sequence-viz{padding-top:24px;padding-bottom:24px}
+@media print{.review .chapters{padding-left:0;margin-left:0;border:0}.review .chapter-index{position:static}.decision .chapter:first-child .chapter-body>blockquote{font-size:18pt}.option-plane,.sample-profile{break-inside:avoid}.review .chapter-body>p:has(>strong:first-child){background:none}}

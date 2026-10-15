@@ -2190,6 +2190,7 @@ function invalidProvenance(artifactPath, sidecar, reason, evidence = {}) {
 
 const COMMAND_USAGE = {
   render: '<type> <input.json> [output.html] [--quality standard|showcase] [--repo-root path]',
+  document: '<input.md> [output.html] [--design HTML | --design-url URL | --template family/variant | --template-path directory] [--design-options JSON] [--content-selector CSS] [--exclude-selector CSS] [--json]; templates [--json]; scan <HTML or URL> [--save-template directory] [--json]',
   compare: 'architecture <base.json> <head.json> [output.html] [--receipt path] [--json] [--quality standard|showcase] [--repo-root path]',
   deliver: '<type> <input.json> [output.html] [--json] [--open] [--quality standard|showcase] [--repo-root path]',
   finalize: '<type> <input.json> <output.html> [--json] [--receipt path] [--out-dir <dir>] [--quality standard|showcase] [--repo-root path] [--candidate-sha256 hex]',
@@ -4228,6 +4229,51 @@ async function commandCompare(args) {
       console.error(`Warning: could not remove compare staging directory: ${error.message}`);
     }
   }
+}
+
+// The document command maps Markdown into an HTML design and preserves its styles and scripts.
+// The pipeline and optional design configuration are documented in archify/document/README.md.
+function documentRendererPath() {
+  return path.join(skillRoot, 'renderers', 'document', 'render-document.mjs');
+}
+
+async function commandDocument(args) {
+  const qualityArgs = extractQualityArgs(args);
+  const repoArgs = extractRepoRootArgs(qualityArgs.rest);
+  const values = {}, rest = [];
+  const names = {'--design':'designPath','--design-url':'designURL','--template':'template','--template-path':'templatePath','--design-options':'designOptionsPath','--content-selector':'contentSelector','--exclude-selector':'excludeSelector','--save-template':'templateDir','--library-path':'libraryPath'};
+  let json = false;
+  for (let i=0;i<repoArgs.rest.length;i++) {
+    const arg=repoArgs.rest[i];
+    if(arg==='--json'){json=true;continue;}
+    const option=arg.split('=')[0],key=names[option];
+    if(key){const value=arg.includes('=')?arg.slice(option.length+1):repoArgs.rest[++i];if(!value||value.startsWith('--'))rejectCliArgument(option+' requires a value.',{code:'cli/missing-option-value',subject:{option},supportedFixes:['provide a value after '+option]});if(values[key]!==undefined)rejectCliArgument('Duplicate document option '+option,{code:'cli/duplicate-option',subject:{option}});values[key]=value;}
+    else rest.push(arg);
+  }
+  const unknown=rest.find(arg=>arg.startsWith('--'));
+  if(unknown)rejectCliArgument('Unknown document option "'+unknown+'".',{code:'cli/unknown-option',subject:{option:unknown}});
+  if(rest[0]==='templates') {
+    if(rest.length!==1||Object.keys(values).some(key=>key!=='libraryPath'))rejectCliArgument('Usage: archify document templates [--library-path directory] [--json]',{code:'cli/usage'});
+    const {callTool}=await import('../document/tool.mjs');
+    const result=await callTool('list_document_templates',values.libraryPath?{library_path:values.libraryPath}:{});
+    if(json||!result.ok)console.log(JSON.stringify(result));
+    else {
+      for(const template of result.templates)console.log(template.id+' · '+template.title+' · '+template.path);
+      for(const template of result.saved_templates)console.log(template.name+' · '+template.path);
+      for(const warning of result.warnings)console.error(warning.message+' '+warning.subject.path);
+    }
+    if(!result.ok)process.exitCode=1;
+    return;
+  }
+  if(rest[0]==='scan') {
+    const input=rest[1];if(!input||rest.length!==2||values.designPath||values.designURL||values.template||values.templatePath||values.designOptionsPath||values.libraryPath)rejectCliArgument('Usage: archify document scan <HTML path or URL> [--save-template directory] [--content-selector CSS] [--exclude-selector CSS] [--json]',{code:'cli/usage'});
+    const {callTool}=await import('../document/tool.mjs');
+    const result=await callTool('scan_html',{[/^https?:/i.test(input)?'design_url':'design_path']:input,...(values.templateDir?{template_dir:values.templateDir}:{}),...(values.contentSelector?{content_selector:values.contentSelector}:{}),...(values.excludeSelector?{exclude_selector:values.excludeSelector}:{})});
+    console.log(JSON.stringify(result));if(!result.ok)process.exitCode=1;return;
+  }
+  const [input,output]=rest;if(!input||rest.length>2||values.templateDir||values.libraryPath)rejectCliArgument(usage(),{code:'cli/usage'});
+  const result=runNode([documentRendererPath(),input,output||'',values.designPath||'',values.designOptionsPath||'',JSON.stringify({template:values.template,templatePath:values.templatePath,designURL:values.designURL,contentSelector:values.contentSelector,excludeSelector:values.excludeSelector,json})],{env:rendererEnv(qualityArgs.quality,repoArgs.repoRoot)});
+  if(result.status!==0)exitFrom(result);
 }
 
 function commandRender(args) {
@@ -7073,6 +7119,9 @@ try {
     case 'render':
       commandRender(args);
       break;
+    case 'document':
+      await commandDocument(args);
+      break;
     case 'compare':
       await commandCompare(args);
       break;
@@ -7130,7 +7179,7 @@ try {
   }
 } catch (error) {
   if (!error.archifyArgument) throw error;
-  if (['validate', 'deliver', 'finalize', 'inspect'].includes(command) && args.includes('--json')) {
+  if (['validate', 'deliver', 'finalize', 'inspect', 'document'].includes(command) && args.includes('--json')) {
     reportArtifactArgumentFailure(command, error);
   } else {
     fail(error.message);
