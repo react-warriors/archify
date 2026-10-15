@@ -2755,3 +2755,308 @@ test('rejected fixed-v1 label overflow reports its footprint without changing th
   assert.equal(result.diagnostics[0].code, 'layout/constraint');
   assert.match(result.diagnostics[0].message, /composition\/label-canvas-containment.*right edge by 55px/);
 });
+
+test('a group label blocking an authored endpoint side offers the group placement that verifies', () => {
+  // A `drop` handoff whose target column also carries a group label. The label
+  // sits across the only column the authored `toSide: "top"` approach can use,
+  // so no route preset or endpoint-side change can clear it. The group's own
+  // column span is the one authored field that does, and the compiler must
+  // publish it rather than an empty repair list.
+  const document = {
+    schema_version: 2,
+    diagram_type: 'workflow',
+    meta: { title: 'Group label route clearance', output: 'group-label-clearance.html' },
+    lanes: [
+      { id: 'signals', label: 'Signals' },
+      { id: 'responders', label: 'Incident Command' },
+      { id: 'exceptions', label: 'Escalation + Rollback', variant: 'exception' },
+    ],
+    groups: [
+      { id: 'command', label: 'Incident command', lane: 'responders', fromCol: 1, toCol: 3, variant: 'emphasis' },
+      { id: 'exception_actions', label: 'If impact persists', lane: 'exceptions', fromCol: 3, toCol: 5, variant: 'security' },
+    ],
+    mainPath: ['alert', 'page'],
+    nodes: [
+      { id: 'alert', lane: 'signals', col: 0, type: 'messagebus', label: 'SLO Alert', sublabel: 'burn rate' },
+      { id: 'page', lane: 'responders', col: 1, width: 76, type: 'external', label: 'Page On-call', sublabel: 'acknowledge' },
+      { id: 'rollback', lane: 'exceptions', col: 5, type: 'messagebus', label: 'Rollback', sublabel: 'last good' },
+    ],
+    edges: [
+      { from: 'alert', to: 'page', label: 'page', variant: 'emphasis', route: 'drop', fromSide: 'bottom', toSide: 'top' },
+    ],
+  };
+
+  const result = compileWorkflow({ workflow: clone(document), qualityProfile: 'showcase' });
+  assert.equal(result.ok, false);
+  const diagnostic = result.diagnostics.find(({ code }) => code === 'workflow/route-preset-conflict');
+  assert.ok(diagnostic, JSON.stringify(result.diagnostics, null, 2));
+  assert.equal(diagnostic.evidence.invariant, 'lane/phase/group label clearance');
+  assert.deepEqual(diagnostic.evidence.blockedBy, { kind: 'group-label', id: 'command' });
+  assert.equal(Number.isInteger(diagnostic.evidence.segmentIndex), true);
+
+  // No preset or endpoint-side change is a repair, so the only advertised fix
+  // must be the group placement.
+  const groupFix = diagnostic.supportedFixes.find((fix) => /^set group "command"/.test(fix));
+  assert.ok(groupFix, JSON.stringify(diagnostic.supportedFixes, null, 2));
+  assert.doesNotMatch(diagnostic.supportedFixes.join('\n'), /route to verified preset/);
+  assert.doesNotMatch(diagnostic.supportedFixes.join('\n'), /remove route from edge/);
+
+  // Applying the advertised span must actually compile, which is what makes it
+  // publishable. Parse it rather than hard-coding, so a wrong advertised span
+  // cannot pass by accident.
+  const advertised = /fromCol to (\d+) and toCol to (\d+)/.exec(groupFix);
+  assert.ok(advertised, groupFix);
+  const repaired = clone(document);
+  repaired.groups[0].fromCol = Number(advertised[1]);
+  repaired.groups[0].toCol = Number(advertised[2]);
+  const after = compileWorkflow({ workflow: repaired, qualityProfile: 'showcase' });
+  assert.equal(after.ok, true, JSON.stringify(after.diagnostics, null, 2));
+});
+
+test('the group-placement repair only proposes spans that keep the group members', () => {
+  // Two shapes the naive "shrink fromCol/toCol by one" search gets wrong:
+  // a group that spans only the blocking column, and a wider group that owns a
+  // node in its rightmost column. Both must yield a span that compiles AND
+  // still contains every node the group had.
+  const laneTable = () => ([
+    { id: 'signals', label: 'Signals' },
+    { id: 'responders', label: 'Incident Command' },
+    { id: 'exceptions', label: 'Escalation + Rollback', variant: 'exception' },
+  ]);
+  const shared = () => ({
+    schema_version: 2,
+    diagram_type: 'workflow',
+    meta: { title: 'Group placement repair', output: 'group-placement.html' },
+    lanes: laneTable(),
+    mainPath: ['alert', 'page'],
+    nodes: [
+      { id: 'alert', lane: 'signals', col: 0, type: 'messagebus', label: 'SLO Alert' },
+      { id: 'page', lane: 'responders', col: 1, width: 76, type: 'external', label: 'Page On-call' },
+      { id: 'rollback', lane: 'exceptions', col: 5, type: 'messagebus', label: 'Rollback' },
+    ],
+    edges: [
+      { from: 'alert', to: 'page', label: 'page', variant: 'emphasis', route: 'drop', fromSide: 'bottom', toSide: 'top' },
+    ],
+  });
+
+  // A group whose span is exactly the blocking column must still be repairable:
+  // subtracting one from toCol tests 0..0 and the unchanged 1..1, and never the
+  // 0..1 span that actually clears the label.
+  const singleColumn = clone(shared());
+  singleColumn.groups = [
+    { id: 'command', label: 'Incident command', lane: 'responders', fromCol: 1, toCol: 1, variant: 'emphasis' },
+  ];
+  const singleResult = compileWorkflow({ workflow: clone(singleColumn), qualityProfile: 'showcase' });
+  const singleDiagnostic = singleResult.diagnostics.find(({ code }) => code === 'workflow/route-preset-conflict');
+  const singleFix = (singleDiagnostic?.supportedFixes || []).find((fix) => /^set group "command"/.test(fix));
+  assert.ok(singleFix, JSON.stringify(singleDiagnostic?.supportedFixes, null, 2));
+  const singleSpan = /fromCol to (\d+) and toCol to (\d+)/.exec(singleFix);
+  assert.ok(singleSpan, singleFix);
+  const singleRepaired = clone(singleColumn);
+  singleRepaired.groups[0].fromCol = Number(singleSpan[1]);
+  singleRepaired.groups[0].toCol = Number(singleSpan[2]);
+  assert.equal(compileWorkflow({ workflow: singleRepaired, qualityProfile: 'showcase' }).ok, true);
+
+  // A wider group that owns a node in its rightmost column must not be repaired
+  // by a span that ejects that node — compiling is not enough on its own.
+  const wide = clone(shared());
+  wide.groups = [
+    { id: 'command', label: 'Incident command', lane: 'responders', fromCol: 1, toCol: 3, variant: 'emphasis' },
+  ];
+  wide.nodes = [
+    ...wide.nodes,
+    { id: 'triage', lane: 'responders', col: 3, type: 'backend', label: 'Triage' },
+  ];
+  wide.edges = [...wide.edges, { from: 'page', to: 'triage', variant: 'default' }];
+  const wideResult = compileWorkflow({ workflow: clone(wide), qualityProfile: 'showcase' });
+  const wideDiagnostic = wideResult.diagnostics.find(({ code }) => code === 'workflow/route-preset-conflict');
+  const wideFix = (wideDiagnostic?.supportedFixes || []).find((fix) => /^set group "command"/.test(fix));
+  assert.ok(wideFix, JSON.stringify(wideDiagnostic?.supportedFixes, null, 2));
+  const wideSpan = /fromCol to (\d+) and toCol to (\d+)/.exec(wideFix);
+  assert.ok(wideSpan, wideFix);
+  const [wideFrom, wideTo] = [Number(wideSpan[1]), Number(wideSpan[2])];
+  for (const memberColumn of [1, 3]) {
+    assert.ok(memberColumn >= wideFrom && memberColumn <= wideTo,
+      `advertised span ${wideFrom}..${wideTo} ejects member column ${memberColumn}`);
+  }
+  const wideRepaired = clone(wide);
+  wideRepaired.groups[0].fromCol = wideFrom;
+  wideRepaired.groups[0].toCol = wideTo;
+  assert.equal(compileWorkflow({ workflow: wideRepaired, qualityProfile: 'showcase' }).ok, true);
+});
+
+test('the group-placement repair does not absorb nodes outside the authored span', () => {
+  // A same-lane node that already sits outside the group's authored span is not
+  // a member. Treating it as one advertises a needlessly wide span that pulls
+  // the node into the group's context, even though a narrower span compiles.
+  const document = {
+    schema_version: 2,
+    diagram_type: 'workflow',
+    meta: { title: 'Group placement absorption', output: 'group-absorption.html' },
+    lanes: [
+      { id: 'signals', label: 'Signals' },
+      { id: 'responders', label: 'Incident Command' },
+      { id: 'exceptions', label: 'Escalation + Rollback', variant: 'exception' },
+    ],
+    mainPath: ['alert', 'page'],
+    nodes: [
+      { id: 'alert', lane: 'signals', col: 0, type: 'messagebus', label: 'SLO Alert' },
+      { id: 'page', lane: 'responders', col: 1, width: 76, type: 'external', label: 'Page On-call' },
+      { id: 'rollback', lane: 'exceptions', col: 5, type: 'messagebus', label: 'Rollback' },
+      // same lane as the group, but authored outside its 1..1 span
+      { id: 'later', lane: 'responders', col: 5, type: 'backend', label: 'Later step' },
+    ],
+    edges: [
+      { from: 'alert', to: 'page', label: 'page', variant: 'emphasis', route: 'drop', fromSide: 'bottom', toSide: 'top' },
+    ],
+    groups: [
+      { id: 'command', label: 'Incident command', lane: 'responders', fromCol: 1, toCol: 1, variant: 'emphasis' },
+    ],
+  };
+
+  const result = compileWorkflow({ workflow: clone(document), qualityProfile: 'showcase' });
+  const diagnostic = result.diagnostics.find(({ code }) => code === 'workflow/route-preset-conflict');
+  const fix = (diagnostic?.supportedFixes || []).find((entry) => /^set group "command"/.test(entry));
+  assert.ok(fix, JSON.stringify(diagnostic?.supportedFixes, null, 2));
+
+  const span = /fromCol to (\d+) and toCol to (\d+)/.exec(fix);
+  assert.ok(span, fix);
+  const [fromCol, toCol] = [Number(span[1]), Number(span[2])];
+
+  // The unrelated col-5 node must stay outside the repaired span, and the group's
+  // real member at col 1 must stay inside it.
+  assert.ok(toCol < 5, `advertised span ${fromCol}..${toCol} absorbs the unrelated col-5 node`);
+  assert.ok(1 >= fromCol && 1 <= toCol, `advertised span ${fromCol}..${toCol} ejects the col-1 member`);
+
+  const repaired = clone(document);
+  repaired.groups[0].fromCol = fromCol;
+  repaired.groups[0].toCol = toCol;
+  assert.equal(compileWorkflow({ workflow: repaired, qualityProfile: 'showcase' }).ok, true);
+});
+
+test('the group-placement repair is withheld when no span keeps membership unchanged', () => {
+  // A same-lane node immediately to the LEFT of the authored span. Every span
+  // that still contains the col-1 member has to start at col 0, which pulls the
+  // col-0 node into the group. `nodeContext()` derives membership from the span,
+  // so advertising that span would move the node into a different group while
+  // the message claims it "keeps its members". No repair is the honest answer.
+  const document = {
+    schema_version: 2,
+    diagram_type: 'workflow',
+    meta: { title: 'Group placement withheld', output: 'group-withheld.html' },
+    lanes: [
+      { id: 'signals', label: 'Signals' },
+      { id: 'responders', label: 'Incident Command' },
+      { id: 'exceptions', label: 'Escalation + Rollback', variant: 'exception' },
+    ],
+    mainPath: ['alert', 'page'],
+    nodes: [
+      { id: 'alert', lane: 'signals', col: 0, type: 'messagebus', label: 'SLO Alert' },
+      { id: 'page', lane: 'responders', col: 1, width: 76, type: 'external', label: 'Page On-call' },
+      { id: 'rollback', lane: 'exceptions', col: 5, type: 'messagebus', label: 'Rollback' },
+      { id: 'earlier', lane: 'responders', col: 0, type: 'backend', label: 'Earlier step' },
+    ],
+    edges: [
+      { from: 'alert', to: 'page', label: 'page', variant: 'emphasis', route: 'drop', fromSide: 'bottom', toSide: 'top' },
+    ],
+    groups: [
+      { id: 'command', label: 'Incident command', lane: 'responders', fromCol: 1, toCol: 1, variant: 'emphasis' },
+    ],
+  };
+
+  const authoredMembers = (span) => document.nodes
+    .filter((node) => node.lane === 'responders')
+    .filter((node) => node.col >= span.fromCol && node.col <= span.toCol)
+    .map((node) => node.id)
+    .sort()
+    .join(',');
+
+  const result = compileWorkflow({ workflow: clone(document), qualityProfile: 'showcase' });
+  const diagnostic = result.diagnostics.find(({ code }) => code === 'workflow/route-preset-conflict');
+  assert.ok(diagnostic, JSON.stringify(result.diagnostics, null, 2));
+
+  const groupFix = (diagnostic.supportedFixes || []).find((fix) => /^set group "command"/.test(fix));
+  if (groupFix) {
+    // If anything is advertised it must not move membership — otherwise the
+    // "while keeping its members" wording is untrue.
+    const span = /fromCol to (\d+) and toCol to (\d+)/.exec(groupFix);
+    assert.ok(span, groupFix);
+    assert.equal(
+      authoredMembers({ fromCol: Number(span[1]), toCol: Number(span[2]) }),
+      authoredMembers({ fromCol: 1, toCol: 1 }),
+      `advertised span ${span[1]}..${span[2]} changes group membership`,
+    );
+  } else {
+    assert.deepEqual(diagnostic.supportedFixes, [],
+      'with no membership-preserving span, no group repair should be offered');
+  }
+
+  // The blocker is still reported, so the failure is diagnosable even though no
+  // repair exists.
+  assert.deepEqual(diagnostic.evidence.blockedBy, { kind: 'group-label', id: 'command' });
+});
+
+test('the group-placement repair is withheld when it would reorder overlapping groups', () => {
+  // Two overlapping groups in one lane. `nodeContext()` takes the first group
+  // whose range contains the node, ordered by lane, then fromCol, then toCol,
+  // then id. Moving the edited group's fromCol can therefore reorder the pair
+  // and hand the target node to the other group — keeping the edited group's
+  // own node set intact while still changing the node's resolved context.
+  const document = {
+    schema_version: 2,
+    diagram_type: 'workflow',
+    meta: { title: 'Overlapping groups', output: 'group-overlap.html' },
+    lanes: [
+      { id: 'signals', label: 'Signals' },
+      { id: 'responders', label: 'Incident Command' },
+      { id: 'exceptions', label: 'Escalation + Rollback', variant: 'exception' },
+    ],
+    mainPath: ['alert', 'page'],
+    nodes: [
+      { id: 'alert', lane: 'signals', col: 0, type: 'messagebus', label: 'SLO Alert' },
+      { id: 'page', lane: 'responders', col: 1, width: 76, type: 'external', label: 'Page On-call' },
+      { id: 'rollback', lane: 'exceptions', col: 5, type: 'messagebus', label: 'Rollback' },
+    ],
+    edges: [
+      { from: 'alert', to: 'page', label: 'page', variant: 'emphasis', route: 'drop', fromSide: 'bottom', toSide: 'top' },
+    ],
+    groups: [
+      { id: 'command', label: 'Incident command', lane: 'responders', fromCol: 1, toCol: 1, variant: 'emphasis' },
+      { id: 'other', label: 'Other', lane: 'responders', fromCol: 0, toCol: 1, variant: 'default' },
+    ],
+  };
+
+  // Same ordering the compiler uses to resolve a node's group.
+  const resolvedLabel = (doc, node) => {
+    const owner = [...doc.groups]
+      .filter((candidate) => candidate.lane === node.lane)
+      .sort((left, right) => (
+        left.fromCol - right.fromCol || left.toCol - right.toCol || String(left.id).localeCompare(String(right.id))
+      ))
+      .find((candidate) => node.col >= candidate.fromCol && node.col <= candidate.toCol);
+    return owner ? owner.label : null;
+  };
+
+  const result = compileWorkflow({ workflow: clone(document), qualityProfile: 'showcase' });
+  const diagnostic = result.diagnostics.find(({ code }) => code === 'workflow/route-preset-conflict');
+  assert.ok(diagnostic, JSON.stringify(result.diagnostics, null, 2));
+
+  const groupFix = (diagnostic.supportedFixes || []).find((fix) => /^set group "command"/.test(fix));
+  if (groupFix) {
+    const span = /fromCol to (\d+) and toCol to (\d+)/.exec(groupFix);
+    assert.ok(span, groupFix);
+    const repaired = clone(document);
+    repaired.groups[0].fromCol = Number(span[1]);
+    repaired.groups[0].toCol = Number(span[2]);
+    for (const node of document.nodes) {
+      assert.equal(
+        resolvedLabel(repaired, node),
+        resolvedLabel(document, node),
+        `advertised span ${span[1]}..${span[2]} moves ${node.id} to a different group`,
+      );
+    }
+  } else {
+    assert.deepEqual(diagnostic.supportedFixes, [],
+      'no span can keep every node in its resolved group, so none should be offered');
+  }
+});
