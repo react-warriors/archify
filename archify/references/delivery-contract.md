@@ -395,6 +395,10 @@ The delivery interface exposes four separate claims:
 
 Passing one claim never implies the others. Never claim that the deterministic receipt includes browser or perceptual review evidence.
 
+## Comparison presentation changes
+
+Architecture comparisons include authored `meta.translations` in presentation changes. Adding, removing or editing translations changes `summary.presentationChanged`; reordering translation keys does not. An empty translation object is equivalent to an omitted catalog for presentation classification; the canonical source digest still records the authored representation. Component, relationship, boundary and repository-provenance classifications remain independent.
+
 ## Recovering a failed comparison
 
 `compare` commits an HTML artifact and its JSON receipt as a pair. If that commit
