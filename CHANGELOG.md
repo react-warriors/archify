@@ -6,7 +6,13 @@ All notable changes are documented here. Format loosely follows [Keep a Changelo
 
 > Development identity: `v3.1.1-dev.1`. Not a stable release.
 
+### Added
+
+- **Workflow v2 字体与测量布局联动（#631）。** 新增可选 `meta.typography_scale`（1–2），让节点文本、泳道/阶段/分组标题、连线标签及图例共同参与布局测量；固定尺寸不足时返回结构化容量诊断。省略或设为 1 保持原有输出，schema v1 和其他图类型不变。
+
 ### Fixed
+
+- **Workflow 字体缩放的源码上下文容量检查（#649）。** 自动高度与容量校验共同考虑已验证的源码信息和品牌图标，布局各阶段使用一致尺寸；修复建议保留来源上下文，并通过真实 CLI 重放验证。默认倍率和作者明确指定的尺寸契约保持不变。
 
 - **Timeline 时区刻度（#926）。** 刻度按显示时区在各真实时刻的 UTC 偏移对齐，修复跨夏令时后日刻度漂移到 01:00／23:00、半小时跳变后小时刻度漂移的问题。回拨的重复时刻保持独立，跳过的小时或日期不生成虚构刻度；事件时间、标签精度、时间轴比例与断轴规则保持不变。
 
