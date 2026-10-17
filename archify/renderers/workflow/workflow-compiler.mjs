@@ -669,6 +669,83 @@ function compilerFailure(contract, diagnostics, error = diagnostics.map(({ messa
   };
 }
 
+// Builds a partial-layout payload describing what the compiler managed to place
+// before a route-feasibility failure. Used on workflow/explicit-pin-conflict
+// and workflow/solver-budget-exhausted so --layout-json can still emit the
+// decided column grid, the placed node frames, and the best-attempt geometry
+// the router tried for the failing edge. Returns null when the failure has no
+// matching diagnostic or no compiled geometry is available.
+function buildPartialLayoutPayload(workflow, layout, nodes, pathCache, partialLayoutFailedCandidates, routeDiagnostics) {
+  if (!layout || !Array.isArray(layout.colXs) || !layout.colXs.every(Number.isFinite)) return null;
+  if (!workflow || !Array.isArray(workflow.edges)) return null;
+  const filteredRouteDiagnostics = (Array.isArray(routeDiagnostics) ? routeDiagnostics : [])
+    .filter(({ code }) => (
+      code === 'workflow/explicit-pin-conflict' || code === 'workflow/solver-budget-exhausted'
+    ));
+  if (!filteredRouteDiagnostics.length) return null;
+  const failingEdge = workflow.edges.find((edge) => filteredRouteDiagnostics.some((diagnostic) => {
+    const subject = diagnostic.subject || {};
+    if (subject.edge && edge.id === subject.edge) return true;
+    if (!subject.edge && edge.from === subject.from && edge.to === subject.to) return true;
+    return false;
+  }));
+  const columnGrid = [...layout.colXs];
+  const nodeFrames = (nodes && typeof nodes.values === 'function'
+    ? [...nodes.values()]
+    : []).map((node) => ({
+      id: node.id,
+      lane: node.lane,
+      col: node.col,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+    }));
+  const edges = [];
+  for (const edge of workflow.edges) {
+    if (failingEdge && edge === failingEdge) {
+      const captured = partialLayoutFailedCandidates ? partialLayoutFailedCandidates.get(edge) : null;
+      const fallbackNames = (failingEdge && filteredRouteDiagnostics
+        .find((diagnostic) => {
+          const subject = diagnostic.subject || {};
+          return (subject.edge && edge.id === subject.edge)
+            || (!subject.edge && edge.from === subject.from && edge.to === subject.to);
+        })
+        ?.evidence?.attemptedCandidateFamilies) || [];
+      const attemptedCandidateFamilies = (captured && captured.length
+        ? captured
+        : fallbackNames.map((family) => ({ family, points: [] }))
+      ).map((entry) => ({
+        family: entry.family,
+        points: Array.isArray(entry.points) ? entry.points.map((point) => [...point]) : [],
+      }));
+      edges.push({
+        id: edge.id ?? null,
+        from: edge.from,
+        to: edge.to,
+        attemptedCandidateFamilies,
+      });
+      continue;
+    }
+    if (pathCache && pathCache.has(edge)) {
+      const routed = pathCache.get(edge);
+      edges.push({
+        id: edge.id ?? null,
+        from: edge.from,
+        to: edge.to,
+        points: routed.points.map((point) => [...point]),
+      });
+      continue;
+    }
+  }
+  return {
+    partial: true,
+    columns: columnGrid,
+    nodes: nodeFrames,
+    edges,
+  };
+}
+
 function workflowEdgeName(edge) {
   return edge.id || `${edge.from}->${edge.to}`;
 }
@@ -1367,6 +1444,20 @@ function compileWorkflowInternal({
   layoutFeedback = {},
   widthOverrides,
 } = {}) {
+  // Reset partial-layout capture so retries never reuse a prior attempt's
+  // rejected candidate geometry. Populated again right before each router throw
+  // that reaches the compileWorkflowInternal catch.
+  let partialLayoutFailedCandidates = new Map();
+  function capturePartialLayoutFailedCandidates(edge, rawCandidates) {
+    if (!edge || !Array.isArray(rawCandidates) || !rawCandidates.length) return;
+    const snapshot = rawCandidates.map((candidate) => ({
+      family: candidate.family,
+      points: Array.isArray(candidate.points)
+        ? candidate.points.map((point) => (Array.isArray(point) ? [...point] : []))
+        : [],
+    }));
+    partialLayoutFailedCandidates.set(edge, snapshot);
+  }
   if (!inputWorkflow || typeof inputWorkflow !== 'object' || Array.isArray(inputWorkflow)) {
     const diagnostics = [{
       code: 'workflow/input-contract',
@@ -4159,6 +4250,7 @@ function readableAutomaticVia(edge, from, to, start, end, fromSide, toSide) {
     const requiredRankGap = from.width / 2 + 32 + to.width / 2;
     const actualRankGap = layout.colXs[toCol] - layout.colXs[fromCol];
     if (actualRankGap + 0.0001 < requiredRankGap) {
+      capturePartialLayoutFailedCandidates(edge, rawCandidates);
       throw new WorkflowLayoutFeedback({
         kind: 'rank-gap-minimum',
         fromCol,
@@ -4173,6 +4265,7 @@ function readableAutomaticVia(edge, from, to, start, end, fromSide, toSide) {
     }
   }
   if (from.lane !== to.lane && layout.laneGap < 32) {
+    capturePartialLayoutFailedCandidates(edge, rawCandidates);
     throw new WorkflowLayoutFeedback({
       kind: 'lane-gap-minimum',
       minimum: 32,
@@ -4184,6 +4277,7 @@ function readableAutomaticVia(edge, from, to, start, end, fromSide, toSide) {
     });
   }
   const message = `Workflow edge "${workflowEdgeName(edge)}" has no feasible readable-v2 automatic route.`;
+  capturePartialLayoutFailedCandidates(edge, rawCandidates);
   throwDiagnosticError(message, [{
     code: 'workflow/solver-budget-exhausted',
     severity: 'error',
@@ -5617,7 +5711,16 @@ function absoluteGeometrySizingDiagnostic() {
     const receipt = measuredPlanReceipt(workflowDiagnostics, requiredViewBox);
     return { ok: true, svg, receipt };
   } catch (error) {
-    if (!Array.isArray(error?.archifyDiagnostics)) throw error;
+    if (!Array.isArray(error?.archifyDiagnostics)) {
+      // Non-diagnostic errors (typically WorkflowLayoutFeedback) escape this
+      // catch. Surface whatever partial layout the compiler had already
+      // decided so feedbackFailure can attach it to the returned failure.
+      const partialLayout = buildPartialLayoutPayload(
+        workflow, layout, nodes, pathCache, partialLayoutFailedCandidates, workflowDiagnostics,
+      );
+      if (partialLayout) error.partialLayout = partialLayout;
+      throw error;
+    }
     const diagnostics = error.archifyDiagnostics.map((diagnostic) => ({ ...diagnostic }));
     // A route failure can hide the sizing side effect of a newly added pin.
     // Supplement that failure without altering acceptance, geometry or fixes.
@@ -5639,11 +5742,18 @@ function absoluteGeometrySizingDiagnostic() {
         // Supplemental evidence must never replace the causal diagnostics.
       }
     }
+    // Additive: expose whatever geometry the compiler decided before the
+    // failure so --layout-json can describe column grid, placed node frames,
+    // and the best-attempt router candidates for the failing edge.
+    const partialLayout = buildPartialLayoutPayload(
+      workflow, layout, nodes, pathCache, partialLayoutFailedCandidates, diagnostics,
+    );
+    if (partialLayout) failure.partialLayout = partialLayout;
     return failure;
   }
 }
 
-function feedbackFailure(request) {
+function feedbackFailure(request, partialLayout) {
   const message = `Workflow edge "${request.edge || `${request.from}->${request.to}`}" exhausted bounded readable-v2 layout feedback without a feasible automatic route.`;
   const diagnostics = [{
     code: 'workflow/solver-budget-exhausted',
@@ -5661,7 +5771,9 @@ function feedbackFailure(request) {
     },
     supportedFixes: [],
   }];
-  return compilerFailure('readable-v2', diagnostics, message);
+  const failure = compilerFailure('readable-v2', diagnostics, message);
+  if (partialLayout && partialLayout.partial) failure.partialLayout = partialLayout;
+  return failure;
 }
 
 const ROUTE_ORDER_CODES = new Set(['composition/ambiguous-corridor', 'composition/proper-crossing']);
@@ -5791,7 +5903,7 @@ function compileWithLayoutFeedback({ workflow, qualityProfile, sourceEvidence, d
         };
       }
       if (!nextFeedback || attempt === MAX_READABLE_LAYOUT_FEEDBACK_ROUNDS) {
-        return feedbackFailure(request);
+        return feedbackFailure(request, error.partialLayout || null);
       }
       layoutFeedback = nextFeedback;
     }
