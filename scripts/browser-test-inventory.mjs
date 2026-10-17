@@ -40,4 +40,5 @@ export const browserTestFiles = [
   'workflow-edge-label-contrast-browser.test.mjs',
   'lifecycle-note-contrast-browser.test.mjs',
   'sequence-segment-contrast-browser.test.mjs',
+  'toolbar-keyboard-browser.test.mjs',
 ];

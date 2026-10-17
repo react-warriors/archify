@@ -5625,6 +5625,31 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       });
     }
 
+    (function () {
+      function attachToolbarNavigation(toolbar, selector) {
+        if (!toolbar) return;
+        toolbar.addEventListener('keydown', function (event) {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+          var controls = Array.from(toolbar.querySelectorAll(selector)).filter(function (control) {
+            return !control.disabled && !control.hidden && control.getClientRects().length;
+          });
+          var current = controls.indexOf(event.target.closest('button'));
+          if (current < 0) return;
+          var next = event.key === 'Home' ? 0
+            : event.key === 'End' ? controls.length - 1
+              : (current + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length;
+          if (next === current) return;
+          event.preventDefault();
+          controls[next].focus();
+        });
+      }
+
+      attachToolbarNavigation(document.querySelector('.toolbar'), ':scope > .toolbar-group > button');
+      attachToolbarNavigation(document.querySelector('.diagram-nav'), ':scope > button');
+      attachToolbarNavigation(document.querySelector('.rail-controls'), ':scope > button');
+    })();
+
     /* ============================================================
        Visual style try-on — one topology, four bundled presets.
        The reader's choice is intentionally session-only: it updates the

@@ -10568,6 +10568,31 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       });
     }
 
+    (function () {
+      function attachToolbarNavigation(toolbar, selector) {
+        if (!toolbar) return;
+        toolbar.addEventListener(&#39;keydown&#39;, function (event) {
+          if (![&#39;ArrowLeft&#39;, &#39;ArrowRight&#39;, &#39;Home&#39;, &#39;End&#39;].includes(event.key)) return;
+          if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+          var controls = Array.from(toolbar.querySelectorAll(selector)).filter(function (control) {
+            return !control.disabled &amp;&amp; !control.hidden &amp;&amp; control.getClientRects().length;
+          });
+          var current = controls.indexOf(event.target.closest(&#39;button&#39;));
+          if (current &lt; 0) return;
+          var next = event.key === &#39;Home&#39; ? 0
+            : event.key === &#39;End&#39; ? controls.length - 1
+              : (current + (event.key === &#39;ArrowRight&#39; ? 1 : -1) + controls.length) % controls.length;
+          if (next === current) return;
+          event.preventDefault();
+          controls[next].focus();
+        });
+      }
+
+      attachToolbarNavigation(document.querySelector(&#39;.toolbar&#39;), &#39;:scope &gt; .toolbar-group &gt; button&#39;);
+      attachToolbarNavigation(document.querySelector(&#39;.diagram-nav&#39;), &#39;:scope &gt; button&#39;);
+      attachToolbarNavigation(document.querySelector(&#39;.rail-controls&#39;), &#39;:scope &gt; button&#39;);
+    })();
+
     /* ============================================================
        Visual style try-on — one topology, four bundled presets.
        The reader&#39;s choice is intentionally session-only: it updates the
@@ -25661,6 +25686,31 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         }
       });
     }
+
+    (function () {
+      function attachToolbarNavigation(toolbar, selector) {
+        if (!toolbar) return;
+        toolbar.addEventListener(&#39;keydown&#39;, function (event) {
+          if (![&#39;ArrowLeft&#39;, &#39;ArrowRight&#39;, &#39;Home&#39;, &#39;End&#39;].includes(event.key)) return;
+          if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+          var controls = Array.from(toolbar.querySelectorAll(selector)).filter(function (control) {
+            return !control.disabled &amp;&amp; !control.hidden &amp;&amp; control.getClientRects().length;
+          });
+          var current = controls.indexOf(event.target.closest(&#39;button&#39;));
+          if (current &lt; 0) return;
+          var next = event.key === &#39;Home&#39; ? 0
+            : event.key === &#39;End&#39; ? controls.length - 1
+              : (current + (event.key === &#39;ArrowRight&#39; ? 1 : -1) + controls.length) % controls.length;
+          if (next === current) return;
+          event.preventDefault();
+          controls[next].focus();
+        });
+      }
+
+      attachToolbarNavigation(document.querySelector(&#39;.toolbar&#39;), &#39;:scope &gt; .toolbar-group &gt; button&#39;);
+      attachToolbarNavigation(document.querySelector(&#39;.diagram-nav&#39;), &#39;:scope &gt; button&#39;);
+      attachToolbarNavigation(document.querySelector(&#39;.rail-controls&#39;), &#39;:scope &gt; button&#39;);
+    })();
 
     /* ============================================================
        Visual style try-on — one topology, four bundled presets.
