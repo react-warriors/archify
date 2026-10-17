@@ -626,6 +626,7 @@
         if (next !== null) { event.preventDefault(); buttons[next].focus(); }
       });
       panel.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (event.key !== 'Escape') return;
         event.preventDefault();
         event.stopPropagation();

@@ -14139,6 +14139,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           inspectRelationship(target.getAttribute(&#39;data-relationship-key&#39;));
         });
         relationshipHitOverlay.addEventListener(&#39;keydown&#39;, function (event) {
+          if (event.isComposing) return;
           var target = event.target.closest(&#39;[data-relationship-hit-key]&#39;);
           if (!target) return;
           if (event.key === &#39;Escape&#39; &amp;&amp; pinnedRelationshipKey) {
@@ -17154,6 +17155,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (node) focusNode(node.getAttribute(&#39;data-radar-node-id&#39;));
       });
       surface.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (event.key === &#39;Escape&#39;) {
           event.preventDefault();
           event.stopPropagation();
@@ -17182,6 +17184,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         sync();
       });
       document.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (!panelDrag || event.key !== &#39;Escape&#39;) return;
         finishPanelDrag({
           pointerId: panelDrag.pointerId,
@@ -17219,6 +17222,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         count: function () { return nodes.length; }
       };
     })();
+
 
     /* ============================================================
        Presentation Stage — a shareable, viewport-filling live view.
@@ -19347,6 +19351,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (next !== null) { event.preventDefault(); buttons[next].focus(); }
       });
       panel.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (event.key !== &#39;Escape&#39;) return;
         event.preventDefault();
         event.stopPropagation();
@@ -19508,6 +19513,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         execute(button.getAttribute(&#39;data-guide-action&#39;));
       });
       panel.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (event.key === &#39;Escape&#39; || event.key === &#39;?&#39;) {
           event.preventDefault();
           event.stopPropagation();
@@ -29233,6 +29239,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           inspectRelationship(target.getAttribute(&#39;data-relationship-key&#39;));
         });
         relationshipHitOverlay.addEventListener(&#39;keydown&#39;, function (event) {
+          if (event.isComposing) return;
           var target = event.target.closest(&#39;[data-relationship-hit-key]&#39;);
           if (!target) return;
           if (event.key === &#39;Escape&#39; &amp;&amp; pinnedRelationshipKey) {
@@ -32248,6 +32255,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (node) focusNode(node.getAttribute(&#39;data-radar-node-id&#39;));
       });
       surface.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (event.key === &#39;Escape&#39;) {
           event.preventDefault();
           event.stopPropagation();
@@ -32276,6 +32284,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         sync();
       });
       document.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (!panelDrag || event.key !== &#39;Escape&#39;) return;
         finishPanelDrag({
           pointerId: panelDrag.pointerId,
@@ -32313,6 +32322,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         count: function () { return nodes.length; }
       };
     })();
+
 
     /* ============================================================
        Presentation Stage — a shareable, viewport-filling live view.
@@ -34441,6 +34451,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (next !== null) { event.preventDefault(); buttons[next].focus(); }
       });
       panel.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (event.key !== &#39;Escape&#39;) return;
         event.preventDefault();
         event.stopPropagation();
@@ -34602,6 +34613,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         execute(button.getAttribute(&#39;data-guide-action&#39;));
       });
       panel.addEventListener(&#39;keydown&#39;, function (event) {
+        if (event.isComposing) return;
         if (event.key === &#39;Escape&#39; || event.key === &#39;?&#39;) {
           event.preventDefault();
           event.stopPropagation();

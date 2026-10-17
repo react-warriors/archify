@@ -9334,6 +9334,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           inspectRelationship(target.getAttribute('data-relationship-key'));
         });
         relationshipHitOverlay.addEventListener('keydown', function (event) {
+          if (event.isComposing) return;
           var target = event.target.closest('[data-relationship-hit-key]');
           if (!target) return;
           if (event.key === 'Escape' && pinnedRelationshipKey) {
@@ -12349,6 +12350,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (node) focusNode(node.getAttribute('data-radar-node-id'));
       });
       surface.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (event.key === 'Escape') {
           event.preventDefault();
           event.stopPropagation();
@@ -12377,6 +12379,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         sync();
       });
       document.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (!panelDrag || event.key !== 'Escape') return;
         finishPanelDrag({
           pointerId: panelDrag.pointerId,
@@ -12414,6 +12417,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         count: function () { return nodes.length; }
       };
     })();
+
 
     /* ============================================================
        Presentation Stage — a shareable, viewport-filling live view.
@@ -14542,6 +14546,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (next !== null) { event.preventDefault(); buttons[next].focus(); }
       });
       panel.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (event.key !== 'Escape') return;
         event.preventDefault();
         event.stopPropagation();
@@ -14703,6 +14708,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         execute(button.getAttribute('data-guide-action'));
       });
       panel.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (event.key === 'Escape' || event.key === '?') {
           event.preventDefault();
           event.stopPropagation();

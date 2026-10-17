@@ -1294,6 +1294,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         execute(button.getAttribute('data-guide-action'));
       });
       panel.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (event.key === 'Escape' || event.key === '?') {
           event.preventDefault();
           event.stopPropagation();
