@@ -217,6 +217,7 @@
       closeBtn.addEventListener('click', function () { close(); });
       input.addEventListener('input', function () { render(input.value); });
       input.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         var buttons = resultButtons();
         if (event.key === 'ArrowDown' && buttons.length) {
           event.preventDefault();
@@ -241,6 +242,7 @@
         }
       });
       panel.addEventListener('keydown', function (event) {
+        if (event.isComposing) return;
         if (event.key !== 'Escape') return;
         event.preventDefault();
         event.stopPropagation();
