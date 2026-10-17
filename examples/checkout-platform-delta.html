@@ -14626,12 +14626,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ? &#39;relation=&#39; + encodeURIComponent(relationId)
           : &#39;focus=&#39; + encodeURIComponent(activeIds[0]) + (reachabilityMode ? &#39;&amp;reach=&#39; + reachabilityMode : &#39;&#39;));
         return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
+          if (copyBtn._archifyCopyFeedbackTimer) window.clearTimeout(copyBtn._archifyCopyFeedbackTimer);
           copyBtn.textContent = viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;);
           copyBtn.setAttribute(&#39;aria-label&#39;, copied
             ? viewerText(relationId ? &#39;viewer.passport.copy.pinned.success&#39; : &#39;viewer.passport.copy.focused.success&#39;)
             : viewerText(relationId ? &#39;viewer.passport.copy.pinned.failed&#39; : &#39;viewer.passport.copy.focused.failed&#39;));
-          window.setTimeout(function () {
+          copyBtn._archifyCopyFeedbackTimer = window.setTimeout(function () {
             renderRelationshipCopyAction();
+            copyBtn._archifyCopyFeedbackTimer = null;
           }, 1600);
           return copied;
         });
@@ -18589,11 +18591,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (mode !== &#39;result&#39;) return Promise.resolve(false);
         var value = readerLink(&#39;route=&#39; + encodeURIComponent(startId) + &#39;~&#39; + encodeURIComponent(endId));
         return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
+          if (copyBtn._archifyCopyFeedbackTimer) window.clearTimeout(copyBtn._archifyCopyFeedbackTimer);
           copyBtn.textContent = viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;);
           copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(copied ? &#39;viewer.route.copy.success&#39; : &#39;viewer.route.copy.failed&#39;));
-          window.setTimeout(function () {
+          copyBtn._archifyCopyFeedbackTimer = window.setTimeout(function () {
             copyBtn.textContent = viewerText(&#39;viewer.route.copy&#39;);
             copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(&#39;viewer.route.copy.aria&#39;));
+            copyBtn._archifyCopyFeedbackTimer = null;
           }, 1600);
           return copied;
         });
@@ -19244,11 +19248,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (!selectedKinds.length) return Promise.resolve(false);
         var value = readerLink(&#39;lens=&#39; + selectedKinds.map(encodeURIComponent).join(&#39;~&#39;));
         return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
+          if (copyBtn._archifyCopyFeedbackTimer) window.clearTimeout(copyBtn._archifyCopyFeedbackTimer);
           copyBtn.textContent = viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;);
           copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;));
-          window.setTimeout(function () {
+          copyBtn._archifyCopyFeedbackTimer = window.setTimeout(function () {
             copyBtn.textContent = viewerText(&#39;viewer.common.copyLink&#39;);
             copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(&#39;viewer.lens.copy&#39;));
+            copyBtn._archifyCopyFeedbackTimer = null;
           }, 1600);
           return copied;
         });
@@ -29720,12 +29726,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ? &#39;relation=&#39; + encodeURIComponent(relationId)
           : &#39;focus=&#39; + encodeURIComponent(activeIds[0]) + (reachabilityMode ? &#39;&amp;reach=&#39; + reachabilityMode : &#39;&#39;));
         return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
+          if (copyBtn._archifyCopyFeedbackTimer) window.clearTimeout(copyBtn._archifyCopyFeedbackTimer);
           copyBtn.textContent = viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;);
           copyBtn.setAttribute(&#39;aria-label&#39;, copied
             ? viewerText(relationId ? &#39;viewer.passport.copy.pinned.success&#39; : &#39;viewer.passport.copy.focused.success&#39;)
             : viewerText(relationId ? &#39;viewer.passport.copy.pinned.failed&#39; : &#39;viewer.passport.copy.focused.failed&#39;));
-          window.setTimeout(function () {
+          copyBtn._archifyCopyFeedbackTimer = window.setTimeout(function () {
             renderRelationshipCopyAction();
+            copyBtn._archifyCopyFeedbackTimer = null;
           }, 1600);
           return copied;
         });
@@ -33683,11 +33691,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (mode !== &#39;result&#39;) return Promise.resolve(false);
         var value = readerLink(&#39;route=&#39; + encodeURIComponent(startId) + &#39;~&#39; + encodeURIComponent(endId));
         return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
+          if (copyBtn._archifyCopyFeedbackTimer) window.clearTimeout(copyBtn._archifyCopyFeedbackTimer);
           copyBtn.textContent = viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;);
           copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(copied ? &#39;viewer.route.copy.success&#39; : &#39;viewer.route.copy.failed&#39;));
-          window.setTimeout(function () {
+          copyBtn._archifyCopyFeedbackTimer = window.setTimeout(function () {
             copyBtn.textContent = viewerText(&#39;viewer.route.copy&#39;);
             copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(&#39;viewer.route.copy.aria&#39;));
+            copyBtn._archifyCopyFeedbackTimer = null;
           }, 1600);
           return copied;
         });
@@ -34338,11 +34348,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (!selectedKinds.length) return Promise.resolve(false);
         var value = readerLink(&#39;lens=&#39; + selectedKinds.map(encodeURIComponent).join(&#39;~&#39;));
         return (value === null ? Promise.resolve(false) : copyReaderText(value)).then(function (copied) {
+          if (copyBtn._archifyCopyFeedbackTimer) window.clearTimeout(copyBtn._archifyCopyFeedbackTimer);
           copyBtn.textContent = viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;);
           copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(copied ? &#39;viewer.common.copied&#39; : &#39;viewer.common.copyFailed&#39;));
-          window.setTimeout(function () {
+          copyBtn._archifyCopyFeedbackTimer = window.setTimeout(function () {
             copyBtn.textContent = viewerText(&#39;viewer.common.copyLink&#39;);
             copyBtn.setAttribute(&#39;aria-label&#39;, viewerText(&#39;viewer.lens.copy&#39;));
+            copyBtn._archifyCopyFeedbackTimer = null;
           }, 1600);
           return copied;
         });
