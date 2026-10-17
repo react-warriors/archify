@@ -19573,6 +19573,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
        Ignored when focus is inside an input/textarea/contenteditable.
        ============================================================ */
     document.addEventListener(&#39;keydown&#39;, function (e) {
+      if (e.isComposing) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.defaultPrevented) return;
       var t = e.target;
@@ -34667,6 +34668,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
        Ignored when focus is inside an input/textarea/contenteditable.
        ============================================================ */
     document.addEventListener(&#39;keydown&#39;, function (e) {
+      if (e.isComposing) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.defaultPrevented) return;
       var t = e.target;

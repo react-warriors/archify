@@ -169,6 +169,7 @@ test('Finder preserves search, keyboard, contextual Route selection and cleanup'
 
   await t.test('trusted keyboard navigation, selection and Escape preserve focus boundaries', async () => {
     await load();
+    assert.deepEqual(await run(`(()=>{const event=new KeyboardEvent('keydown',{key:'/',bubbles:true,cancelable:true,isComposing:true});document.dispatchEvent(event);return {prevented:event.defaultPrevented,open:Archify.finder.isOpen()};})()`),{prevented:false,open:false});
     await key('/', 'Slash', 191); await opened();
     await key('ArrowDown', 'ArrowDown', 40);
     const first = await snapshot('keyboard-first'); assert.equal(first.activeNode, first.results[0].id);
