@@ -492,8 +492,7 @@ function segmentLabelBox(segment) {
 // Whether moving one message to `y` keeps it readable: inside the timeline,
 // 28px from messages sharing its horizontal span, and clear of every other
 // label, route and note. Used to offer only repairs that hold.
-function messageFitsAt(messageIndex, y) {
-  const messages = asArray(sequence.messages);
+function messageFitsAt(messageIndex, y, messages = asArray(sequence.messages)) {
   if (y < layout.lifelineTop + 18) return false;
   // An automatic canvas recalculates its height after this edit; an authored
   // canvas must still fit the suggested position without a second repair.
@@ -513,6 +512,40 @@ function messageFitsAt(messageIndex, y) {
     const otherRects = [messageLabelBox(other), messageRouteBox(other), noteRect(other)].filter(Boolean);
     return !movedRects.some((rect) => otherRects.some((otherRect) => rectsOverlap(rect, otherRect, 2)));
   });
+}
+
+// A wrapped note can cover a run of later messages. Move that run together so
+// the first safe position does not create an immediate, unrepairable collision
+// with the next message. Only advertise the compound edit when every projected
+// message remains readable and the note clears the projected run.
+function noteOverlapRepair(messageIndex, blockerIndex, requiredY) {
+  const messages = asArray(sequence.messages);
+  const blocker = messages[blockerIndex];
+  if (!blocker || typeof blocker.y !== 'number') return null;
+  const shift = requiredY - blocker.y;
+  if (shift <= 0) return null;
+  const updates = messages
+    .map((message, index) => ({ message, index }))
+    .filter(({ message }) => typeof message.y === 'number' && message.y >= blocker.y && message.y < blocker.y + shift)
+    .map(({ message, index }) => ({ index, y: message.y + shift }));
+  const projected = messages.map((message, index) => {
+    const update = updates.find((entry) => entry.index === index);
+    return update ? { ...message, y: update.y } : message;
+  });
+  if (!updates.every(({ index, y }) => messageFitsAt(index, y, projected))) return null;
+  const note = noteRect(projected[messageIndex]);
+  if (!note) return null;
+  const clear = projected.every((other, index) => {
+    if (index === messageIndex || typeof other.y !== 'number' || other.y <= projected[messageIndex].y) return true;
+    return ![messageLabelBox(other), messageRouteBox(other), noteRect(other)]
+      .filter(Boolean)
+      .some((rect) => rectsOverlap(note, rect, 2));
+  });
+  if (!clear) return null;
+  return {
+    updates,
+    supportedFix: updates.map(({ index, y }) => `set /messages/${index}/y to ${y}`).join('; '),
+  };
 }
 
 // The first occupant the segment label still covers after its upward steps.
@@ -819,6 +852,7 @@ function validateSequence() {
       if (!blocker) return;
       const requiredY = Math.ceil(note.bottom + 22);
       const blockerPath = `/messages/${blocker.index}/y`;
+      const repair = noteOverlapRepair(messageIndex, blocker.index, requiredY);
       report(`Note on message "${message.label}" wraps to ${lines} (down to y=${bottom}) and reaches message "${blocker.message.label}" at y=${blocker.message.y} — move "${blocker.message.label}" and later messages down so it sits at y=${requiredY} or below, or shorten the note.`, {
         code: 'sequence/note-overlap',
         subject,
@@ -827,8 +861,9 @@ function validateSequence() {
           note: bounds(ownRect),
           blocker: { message: blocker.message.label ?? null, path: blockerPath, y: blocker.message.y, kind: blocker.kind, bounds: bounds(blocker.rect) },
           requiredY,
+          ...(repair ? { movedMessages: repair.updates.map(({ index, y }) => ({ path: `/messages/${index}/y`, y })) } : {}),
         },
-        supportedFixes: messageFitsAt(blocker.index, requiredY) ? [`set ${blockerPath} to ${requiredY}`] : [],
+        supportedFixes: repair ? [repair.supportedFix] : [],
       });
     });
   }

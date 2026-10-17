@@ -228,14 +228,16 @@ function failure(t, spec, code) {
 }
 
 function applyFix(spec, fix) {
-  const [, pointer, value] = fix.match(/^set (\/\S+) to (.+)$/);
   const copy = structuredClone(spec);
-  const keys = pointer.slice(1).split('/');
-  const parent = keys.slice(0, -1).reduce((node, key) => {
-    node[key] ??= {};
-    return node[key];
-  }, copy);
-  parent[keys.at(-1)] = JSON.parse(value);
+  for (const edit of fix.split('; ')) {
+    const [, pointer, value] = edit.match(/^set (\/\S+) to (.+)$/);
+    const keys = pointer.slice(1).split('/');
+    const parent = keys.slice(0, -1).reduce((node, key) => {
+      node[key] ??= {};
+      return node[key];
+    }, copy);
+    parent[keys.at(-1)] = JSON.parse(value);
+  }
   return copy;
 }
 
@@ -329,6 +331,24 @@ test('a wrapped note that reaches the next message names the message and the y i
   assert.deepEqual(constrained.supportedFixes, [], 'authored height remains binding');
   const html = render(t, crowded(requiredY));
   assert.equal(decode(notes(html)[0].lines.join(' ')), LONG_NOTE);
+});
+
+test('a wrapped note reaching several messages offers one verified ordered repair', (t) => {
+  const spec = sequence({
+    messages: [
+      { from: 'client', to: 'api', y: 300, label: 'owner', note: 'word '.repeat(60).trim() },
+      { from: 'client', to: 'api', y: 330, label: 'first blocker' },
+      { from: 'client', to: 'api', y: 366, label: 'second blocker' },
+    ],
+  });
+  spec.meta.viewBox = [560, 600];
+  spec.meta.legend = { mode: 'hidden' };
+  const diagnostic = failure(t, spec, 'sequence/note-overlap');
+  assert.equal(diagnostic.evidence.blocker.path, '/messages/1/y');
+  assert.deepEqual(diagnostic.evidence.movedMessages?.map((entry) => entry.path), ['/messages/1/y', '/messages/2/y']);
+  assert.match(diagnostic.supportedFixes[0], /^set \/messages\/1\/y to \d+; set \/messages\/2\/y to \d+$/);
+  const repaired = run(t, 'validate', applyFix(spec, diagnostic.supportedFixes[0])).result;
+  assert.equal(repaired.status, 0, repaired.stdout);
 });
 
 test('standard keeps accepting a crowded note', (t) => {
