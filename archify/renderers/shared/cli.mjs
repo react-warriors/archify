@@ -354,6 +354,56 @@ export function validateRelationshipIds(diagramType, diagram) {
 // and workflow compiler without performing filesystem operations (see #429).
 export function validateCrossCollectionContracts(diagramType, diagram) {
   validateRelationshipIds(diagramType, diagram);
+  validateInvariants(diagramType, diagram);
+}
+
+const INVARIANT_ELEMENT_COLLECTIONS = {
+  architecture: 'components',
+  class: 'types',
+  dataflow: 'nodes',
+  erd: 'entities',
+  lifecycle: 'states',
+  sequence: 'participants',
+  timeline: 'events',
+  tree: 'nodes',
+  waterfall: 'spans',
+  workflow: 'nodes',
+};
+
+function validateInvariants(diagramType, diagram) {
+  if (!Array.isArray(diagram.invariants)) return;
+  const collection = INVARIANT_ELEMENT_COLLECTIONS[diagramType];
+  const elements = collection && Array.isArray(diagram[collection]) ? diagram[collection] : [];
+  const elementIds = new Set(elements.map((element) => element.id));
+  const invariantIds = new Set();
+  const problems = [];
+
+  diagram.invariants.forEach((invariant, index) => {
+    if (invariantIds.has(invariant.id)) {
+      problems.push(`/invariants/${index}/id duplicates invariant id ${JSON.stringify(invariant.id)}`);
+    }
+    invariantIds.add(invariant.id);
+    invariant.constrains.forEach((id, constrainedIndex) => {
+      if (!elementIds.has(id)) {
+        problems.push(`/invariants/${index}/constrains/${constrainedIndex} references unknown ${collection} id ${JSON.stringify(id)}`);
+      }
+    });
+  });
+
+  if (problems.length) {
+    const code = problems.some((problem) => problem.includes('duplicates invariant id'))
+      ? 'invariant/duplicate-id' : 'invariant/unknown-element';
+    throwDiagnosticProblems('Invariant validation failed', problems, {
+      code,
+      subject: { diagramType, collection },
+      diagnostics: problems.map(message => ({
+        message,
+        code: message.includes('duplicates invariant id') ? 'invariant/duplicate-id' : 'invariant/unknown-element',
+        subject: { diagramType, collection },
+        supportedFixes: [`use an id from the diagram's ${collection} collection`],
+      })),
+    });
+  }
 }
 
 // Accessible name for the generated diagram SVG.

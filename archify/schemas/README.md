@@ -149,6 +149,28 @@ The field is additive and geometry-neutral: omitting it preserves existing
 workflow behavior and including a satisfied contract does not change SVG or
 layout-receipt bytes.
 
+Every diagram type also accepts an optional top-level `invariants` array for
+behavioural constraints that should remain attached to the authored
+specification without changing its layout:
+
+```json
+"invariants": [
+  {
+    "id": "INV-1",
+    "statement": "Credentials are verified before a session opens.",
+    "constrains": ["verify_credentials", "open_session"]
+  }
+]
+```
+
+Each invariant has a stable `id`, a non-empty `statement`, and one or more
+unique `constrains` IDs. The shared loader checks every constrained ID against
+the selected diagram type's rendered element collection (`components`,
+`nodes`, `participants`, `states`, `entities`, `types`, `events`, or `spans`).
+An unknown ID fails validation before layout. Invariants are retained as
+machine-readable specification data and do not add labels, nodes, or visual
+geometry to the rendered diagram.
+
 A file that validates today must keep validating and rendering within its
 declared version throughout the 2.x release line. The explicitly reviewed
 portable-output hardening is the one exception: older v1 documents that omit
@@ -184,6 +206,8 @@ The five diagram schemas reference `common.schema.json#/$defs/...`:
   override shapes used by each renderer-owned key map
 - `guidedViews` — the retired `meta.views` shape, still accepted and ignored
 - `cards` — the summary-card blocks rendered below the SVG
+- `invariants` — optional behavioural constraints whose element references are
+  checked by the shared loader
 
 Lifecycle state `type` is mode-specific (`start`/`active`/`waiting`/...) and
 stays in `lifecycle.schema.json`.
@@ -203,8 +227,9 @@ network dependency. `renderers/shared/validator.mjs` applies the matching
 standalone validator before the renderer's own layout checks.
 The shared loader then checks cross-collection facts that JSON Schema cannot
 express cleanly here: duplicate view IDs, duplicate focus IDs, focus IDs that do
-not exist in the diagram's semantic collection, and duplicate authored
-relationship IDs within the mode's relationship collection.
+not exist in the diagram's semantic collection, duplicate authored relationship
+IDs within the mode's relationship collection, and invariant references that do
+not exist in the selected diagram's rendered element collection.
 
 All five modes support opt-in, revision-pinned repository evidence.
 `meta.repository` names the repository URL and full commit SHA, with optional

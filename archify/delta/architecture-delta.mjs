@@ -82,6 +82,10 @@ function normalizeBoundary(boundary) {
   return { ...boundary, wraps: sorted(boundary.wraps || []) };
 }
 
+function normalizeInvariant(invariant) {
+  return { ...invariant, constrains: sorted(invariant.constrains || []) };
+}
+
 export function canonicalArchitecture(diagram) {
   const meta = { ...(diagram.meta || {}) };
   delete meta.output;
@@ -94,6 +98,7 @@ export function canonicalArchitecture(diagram) {
     components: sortedBy((diagram.components || []).map(normalizeComponent), (component) => component.id),
     boundaries: sortedBy((diagram.boundaries || []).map(normalizeBoundary), boundaryKey),
     connections: sortedBy(diagram.connections || [], (connection) => connection.id || ''),
+    ...(diagram.invariants ? { invariants: sortedBy(diagram.invariants.map(normalizeInvariant), (invariant) => invariant.id) } : {}),
     ...(diagram.cards ? { cards: diagram.cards } : {}),
   };
 }
@@ -191,6 +196,7 @@ const CONNECTION_FIELDS = {
   geometry: ['fromSide', 'toSide', 'route', 'via', 'labelAt', 'labelDx', 'labelDy', 'labelSegment', 'width'],
 };
 const BOUNDARY_FIELDS = { scope: ['wraps'], geometry: ['pad'] };
+const INVARIANT_FIELDS = { semantic: ['statement', 'constrains'] };
 
 function statusFor(classifications, kind) {
   if (classifications.some((value) => ['topology', 'semantic', 'scope'].includes(value))) return 'changed';
@@ -271,6 +277,9 @@ export function compareArchitecture(base, head, evidence = {}) {
   const headConnections = stableIndex(head.connections, 'connections', 'head', 'delta/relationship-id-required');
   const baseBoundaries = boundaryIndex(base.boundaries, 'base');
   const headBoundaries = boundaryIndex(head.boundaries, 'head');
+  const compareInvariants = Array.isArray(base.invariants) || Array.isArray(head.invariants);
+  const baseInvariants = compareInvariants ? stableIndex(base.invariants, 'invariants', 'base') : null;
+  const headInvariants = compareInvariants ? stableIndex(head.invariants, 'invariants', 'head') : null;
 
   const baseRepository = normalizeRepository(base.meta?.repository);
   const headRepository = normalizeRepository(head.meta?.repository);
@@ -304,6 +313,9 @@ export function compareArchitecture(base, head, evidence = {}) {
     kind: (after || before).kind,
     label: (after || before).label,
   }));
+  const invariants = compareInvariants
+    ? compareEntities(baseInvariants, headInvariants, 'invariant', INVARIANT_FIELDS, (id) => ({ id }))
+    : [];
   const provenance = provenanceChange(baseRepository, headRepository);
   const provenanceChanged = Boolean(provenance);
 
@@ -334,15 +346,17 @@ export function compareArchitecture(base, head, evidence = {}) {
       components: summaryFor(components, ['added', 'changed', 'evidenceChanged', 'removed', 'moved']),
       connections: summaryFor(connections, ['added', 'changed', 'removed', 'rerouted']),
       boundaries: summaryFor(boundaries, ['added', 'changed', 'removed', 'geometryChanged']),
+      ...(compareInvariants ? { invariants: summaryFor(invariants, ['added', 'changed', 'removed']) } : {}),
       presentationChanged: presentationChanged(base, head),
       provenanceChanged,
     },
-    changes: { components, connections, boundaries },
+    changes: { components, connections, boundaries, ...(compareInvariants ? { invariants } : {}) },
     ...(provenance ? { provenance } : {}),
     identity: {
       components: 'components[].id',
       connections: 'connections[].id (required)',
       boundaries: 'boundaries[].kind + boundaries[].label (derived)',
+      ...(compareInvariants ? { invariants: 'invariants[].id' } : {}),
     },
     view: { visualPreset: head.meta?.visual_preset || 'classic' },
     limitations: [
@@ -729,7 +743,7 @@ function expectedReviewTargetSignature(row) {
   return descriptors.sort(codepointOrder).join('|');
 }
 
-const total = (summary, key) => summary.components[key] + summary.connections[key] + summary.boundaries[key];
+const total = (summary, key) => summary.components[key] + summary.connections[key] + summary.boundaries[key] + (summary.invariants?.[key] || 0);
 
 function provenanceDetail(provenance) {
   if (provenance === undefined) return 'Repository metadata changed; field details are unavailable in this receipt.';
@@ -756,6 +770,10 @@ export function renderArchitectureDeltaHtml({ receipt, baseSvg, deltaSvg, headSv
   const provenanceDescription = provenanceChanged ? provenanceDetail(receipt.provenance) : '';
   const provenanceNotice = provenanceChanged
     ? `<aside class="provenance-change" data-provenance-changed="true" data-provenance-fields="${esc(provenanceFields)}"><strong>Repository provenance changed</strong><span>${esc(provenanceDescription)}</span></aside>`
+    : '';
+  const invariantChanges = receipt.changes.invariants || [];
+  const invariantNotice = invariantChanges.length
+    ? `<aside class="provenance-change" data-invariant-changes="${invariantChanges.length}"><strong>Behavioural invariants changed</strong><span>${esc(invariantChanges.map((change) => `${change.status}: ${change.id} (${change.changedFields.join(', ') || 'identity'})`).join(' · '))}</span></aside>`
     : '';
   const rowHtml = rows.length ? rows.map((row, index) => {
     const label = row.headLabel || row.baseLabel || row.head?.label || row.base?.label || row.label || row.id;
@@ -787,7 +805,7 @@ html[data-theme="dark"] body{background:#071019!important;background-image:none!
 @media(max-width:760px){.proof-page{width:100%;padding:12px}.proof-head{grid-template-columns:1fr;gap:14px;align-items:start}.proof-head h1{font-size:32px}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}.metric{min-width:0}.provenance-change{align-items:flex-start;flex-wrap:wrap}.provenance-change span{width:100%;margin-left:0}.proof-tools{align-items:stretch;flex-wrap:wrap;gap:8px}.view-switch{display:flex;flex:1 1 100%}.view-switch button{flex:1;padding-inline:8px}.legend{flex-wrap:wrap;gap:8px}.proof-tools>div:last-child{margin-left:auto}.review-strip{grid-template-columns:auto auto auto auto}.review-status{grid-column:1/-1;padding:4px 2px 0}.canvas{min-height:0;padding:6px;overflow:auto}.canvas svg{min-width:720px;max-height:none}.snapshot-frame{min-width:720px}.changes{overflow-x:auto}.change-row{min-width:820px}.proof-foot{flex-direction:column;gap:4px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.canvas[data-delta-review-active] [data-delta-review-current]{transition:none!important}}@media print{body{min-width:0;background:#fff;color:#111}.proof-page{width:100%;padding:0}.proof-tools,.review-strip,details{display:none!important}.canvas{display:none!important}.canvas[data-view="delta"]{display:block!important;border:0}.canvas[data-view="delta"] [data-delta-state="same"]{opacity:1!important;transition:none!important}.canvas[data-delta-review-active]{--review-same-opacity:1;--review-change-opacity:1}.canvas[data-delta-review-active] [data-delta-review-current]{opacity:1!important;transition:none!important}.proof-foot{color:#444}}
 </style></head>
-<body><main class="proof-page"><header class="proof-head"><div><p class="eyebrow">ARCHITECTURE DELTA · ${proof}</p><h1>See what changed<br>before you merge.</h1><p class="subtitle">${esc(receipt.base.title)} → ${esc(receipt.head.title)}</p></div><div class="metrics"><div class="metric add"><strong>${total(receipt.summary, 'added')}</strong><span>ADDED</span></div><div class="metric remove"><strong>${total(receipt.summary, 'removed')}</strong><span>REMOVED</span></div><div class="metric change"><strong>${changed}</strong><span>CHANGED</span></div></div></header>${provenanceNotice}
+<body><main class="proof-page"><header class="proof-head"><div><p class="eyebrow">ARCHITECTURE DELTA · ${proof}</p><h1>See what changed<br>before you merge.</h1><p class="subtitle">${esc(receipt.base.title)} → ${esc(receipt.head.title)}</p></div><div class="metrics"><div class="metric add"><strong>${total(receipt.summary, 'added')}</strong><span>ADDED</span></div><div class="metric remove"><strong>${total(receipt.summary, 'removed')}</strong><span>REMOVED</span></div><div class="metric change"><strong>${changed}</strong><span>CHANGED</span></div></div></header>${provenanceNotice}${invariantNotice}
 <div class="proof-tools"><div class="view-switch" role="tablist" aria-label="Architecture snapshot"><button role="tab" data-target="base" aria-selected="false">Before</button><button role="tab" data-target="delta" aria-selected="true">Delta</button><button role="tab" data-target="head" aria-selected="false">After</button></div><div class="legend"><span class="add"><i></i>+ ADD</span><span class="remove"><i></i>− DEL</span><span class="change"><i></i>~ MOD</span><span class="move"><i></i>↔ MOVE</span></div><div><button class="utility" id="export-svg" type="button">Export SVG</button> <button class="utility" id="share-card" type="button">Share Card</button> <button class="utility" id="preset" type="button">Preset</button> <button class="utility" id="theme" type="button">Theme</button></div></div>
 <nav class="review-strip" aria-label="Authored change review"><button class="review-step" id="review-overview" type="button" disabled>Overview</button><button class="review-step" id="review-previous" type="button" aria-label="Previous authored change" disabled>←</button><button class="review-step" id="review-play" type="button" aria-pressed="false"${rows.length ? '' : ' disabled'}>Review</button><button class="review-step" id="review-next" type="button" aria-label="Next authored change" disabled>→</button><div class="review-status" id="review-status" role="status" aria-live="polite">Overview · ${rows.length} authored ${provenanceChanged ? 'graph changes · provenance changed' : 'changes'}</div></nav>
 <section class="canvas" data-view="base" hidden>${baseView}</section><section class="canvas" data-view="delta">${deltaSvg}</section><section class="canvas" data-view="head" hidden>${headView}</section>

@@ -172,6 +172,22 @@ test('canonical architecture ignores formatting, entity order, and set-like orde
   assert.equal(canonicalArchitectureJson(reordered), canonicalArchitectureJson(original));
 });
 
+test('architecture compare preserves and reports behavioural invariant changes', () => {
+  const base = read(baseFixture);
+  const head = read(baseFixture);
+  base.invariants = [{ id: 'INV-1', statement: 'Checkout requests stay authenticated.', constrains: ['checkout'] }];
+  head.invariants = [{ id: 'INV-1', statement: 'Checkout requests stay authorized.', constrains: ['checkout', 'api'] }];
+  const receipt = compareArchitecture(base, head);
+  assert.deepEqual(receipt.summary.invariants, { added: 0, changed: 1, removed: 0 });
+  assert.deepEqual(receipt.changes.invariants, [{
+    id: 'INV-1', status: 'changed', classifications: ['semantic'], changedFields: ['/constrains', '/statement'],
+  }]);
+  assert.notEqual(canonicalArchitectureJson(base), canonicalArchitectureJson(head));
+  const html = renderDelta(receipt);
+  assert.match(html, /data-invariant-changes="1"/);
+  assert.match(html, /Behavioural invariants changed/);
+});
+
 test('compare reports brand-only changes in the receipt and exact review target', () => {
   const base = {
     schema_version: 1,

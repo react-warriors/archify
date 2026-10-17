@@ -19,6 +19,7 @@
     "diagram_type": {
       "const": "dataflow"
     },
+    "invariants": { "$ref": "common.schema.json#/$defs/invariants" },
     "meta": {
       "type": "object",
       "additionalProperties": false,

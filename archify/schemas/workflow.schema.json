@@ -22,6 +22,7 @@
     "diagram_type": {
       "const": "workflow"
     },
+    "invariants": { "$ref": "common.schema.json#/$defs/invariants" },
     "meta": {
       "type": "object",
       "additionalProperties": false,
