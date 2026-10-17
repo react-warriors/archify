@@ -24,11 +24,12 @@ import {
 import { shortestOrthogonalGridRoute } from '../shared/route-quality.mjs';
 
 /**
- * Router bound to one set of measured component boxes.
+ * Router bound to measured endpoint boxes and opaque component obstacles
  *
- * @param {Map<string, {x,y,width,height,cx,cy}>} components measured boxes by id
+ * @param {Map<string, {x,y,width,height,cx,cy}>} endpoints measured endpoint boxes by id
  * @param {Array<object>} connections the connection list to spread ports across
  * @param {object} [options]
+ * @param {Map<string, {x,y,width,height,cx,cy}>} [options.components = endpoints] opaque component obstacles
  * @param {Array<{x,y,width,height,radius?}>} [options.frames] structural frames
  *   (boundaries) whose borders an automatic route may cross but never follow
  * @param {number} [options.interiorSegmentPx] showcase floor for interior segments
@@ -72,7 +73,8 @@ import { shortestOrthogonalGridRoute } from '../shared/route-quality.mjs';
  *   the bounded readability sweep on an intrinsic-height canvas. Width and
  *   authored geometry stay fixed; fixed canvases leave this at zero.
  */
-export function createRouter(components, connections = [], {
+export function createRouter(endpoints, connections = [], {
+  components = endpoints,
   frames = [],
   interiorSegmentPx = 16,
   microSegmentPx = 8,
@@ -172,7 +174,11 @@ export function createRouter(components, connections = [], {
       && collectRouteRhythmIssues({ routedRelations: [{ points }], interiorSegmentPx, microSegmentPx }).length === 0;
   }
   function gridComponentObstacles(conn, gap) {
-    return [...components.values()].map((component) => (gap === 0 || component.id === conn.from || component.id === conn.to
+    const obstacles = [...components.values()];
+    for (const id of [conn.from, conn.to]) {
+      if (!components.has(id)) obstacles.push(endpoints.get(id));
+    }
+    return obstacles.map((component) => (gap === 0 || component.id === conn.from || component.id === conn.to
       ? component
       : { ...component, x: component.x - gap, y: component.y - gap, width: component.width + gap * 2, height: component.height + gap * 2 }));
   }
@@ -691,8 +697,8 @@ export function createRouter(components, connections = [], {
   // inference alone sends the outer ones sideways around their siblings.
   const neighbourRects = new Map();
   for (const conn of connections) {
-    const from = components.get(conn.from);
-    const to = components.get(conn.to);
+    const from = endpoints.get(conn.from);
+    const to = endpoints.get(conn.to);
     if (!from || !to || from === to) continue;
     for (const [node, other] of [[from, to], [to, from]]) {
       neighbourRects.set(node.id, [...(neighbourRects.get(node.id) || []), other]);
@@ -734,7 +740,7 @@ export function createRouter(components, connections = [], {
   const markerSpacing = (left, right) => 3.5 * (stroke(left) + stroke(right));
   const portSpacing = (left, right) => Math.max(14, markerSpacing(left, right) + 3.5);
   function fanOutSide(conn, endpoint) {
-    const fanOut = rowFanOutSides(components.get(conn.from), components.get(conn.to));
+    const fanOut = rowFanOutSides(endpoints.get(conn.from), endpoints.get(conn.to));
     return endpoint === 'source' ? fanOut?.fromSide : fanOut?.toSide;
   }
   // A caller may own the endpoint side of a relationship; whatever it leaves
@@ -742,7 +748,7 @@ export function createRouter(components, connections = [], {
   function inferredSide(conn, endpoint) {
     return sideFor?.(conn, endpoint) || fanOutSide(conn, endpoint);
   }
-  const automaticPorts = automaticPortSpread(connections, components, {
+  const automaticPorts = automaticPortSpread(connections, endpoints, {
     sideFor: inferredSide,
     ...(maxPortSpacing === null ? {} : { maxSpacing: maxPortSpacing }),
     // Preserve the established initial placement for ordinary markers; only
@@ -752,7 +758,7 @@ export function createRouter(components, connections = [], {
   });
   const incidentEndpoints = new Map();
   for (const conn of connections) {
-    if (!components.has(conn.from) || !components.has(conn.to)) continue;
+    if (!endpoints.has(conn.from) || !endpoints.has(conn.to)) continue;
     for (const [field, sideField] of [['from', 'fromSide'], ['to', 'toSide']]) {
       const entries = incidentEndpoints.get(conn[field]) || [];
       entries.push({ conn, field, sideField });
@@ -760,8 +766,8 @@ export function createRouter(components, connections = [], {
     }
   }
   function inferredConnectionSides(conn) {
-    const from = components.get(conn.from);
-    const to = components.get(conn.to);
+    const from = endpoints.get(conn.from);
+    const to = endpoints.get(conn.to);
     return {
       fromSide: chosenSide(conn.fromSide, inferredSide(conn, 'source') || defaultFromSide(from, to)),
       toSide: chosenSide(conn.toSide, inferredSide(conn, 'target') || defaultToSide(from, to)),
@@ -824,7 +830,7 @@ export function createRouter(components, connections = [], {
     // On an alternate side, equally close slots should approach the other
     // node rather than pass its neighbours just because a coordinate is lower.
     // Keep the established spread order on the inferred side unchanged.
-    const counterpart = components.get(endpoint === 'from' ? conn.to : conn.from);
+    const counterpart = endpoints.get(endpoint === 'from' ? conn.to : conn.from);
     const toward = side === inferredSide ? preferred[axis] : (axis === 1 ? counterpart.cy : counterpart.cx);
     const candidates = [preferred[axis], ...occupied.flatMap(({ value, spacing }) => [value - spacing, value + spacing])]
       .sort((a, b) => Math.abs(a - preferred[axis]) - Math.abs(b - preferred[axis])
@@ -841,8 +847,8 @@ export function createRouter(components, connections = [], {
   }
 
   function connectionGeometry(conn, sides = inferredConnectionSides(conn)) {
-    const from = components.get(conn.from);
-    const to = components.get(conn.to);
+    const from = endpoints.get(conn.from);
+    const to = endpoints.get(conn.to);
     const inferred = inferredConnectionSides(conn);
     const { fromSide, toSide } = sides;
     const legacyPorts = fromSide === inferred.fromSide && toSide === inferred.toSide ? automaticPorts.get(conn) : null;
@@ -1013,14 +1019,14 @@ export function createRouter(components, connections = [], {
     routesPlanning = true;
     const indexed = connections
       .map((conn, index) => ({ conn, index }))
-      .filter(({ conn }) => components.has(conn.from) && components.has(conn.to));
+      .filter(({ conn }) => endpoints.has(conn.from) && endpoints.has(conn.to));
     const explicit = indexed.filter(({ conn }) => hasAuthoredRouteGeometry(conn));
     const automatic = indexed.filter(({ conn }) => !hasAuthoredRouteGeometry(conn))
       .sort((left, right) => {
-        const leftFrom = components.get(left.conn.from);
-        const leftTo = components.get(left.conn.to);
-        const rightFrom = components.get(right.conn.from);
-        const rightTo = components.get(right.conn.to);
+        const leftFrom = endpoints.get(left.conn.from);
+        const leftTo = endpoints.get(left.conn.to);
+        const rightFrom = endpoints.get(right.conn.from);
+        const rightTo = endpoints.get(right.conn.to);
         const leftDistance = Math.abs(leftTo.cx - leftFrom.cx) + Math.abs(leftTo.cy - leftFrom.cy);
         const rightDistance = Math.abs(rightTo.cx - rightFrom.cx) + Math.abs(rightTo.cy - rightFrom.cy);
         return leftDistance - rightDistance || left.index - right.index;
@@ -1042,7 +1048,7 @@ export function createRouter(components, connections = [], {
     // every other route and label as an obstacle/reference.
     if (preferReadableRoutes) {
       const scenePoints = resolvedRoutes.flatMap((entry) => entry.points);
-      for (const rect of [...components.values(), ...frames, ...reservedLabels.map((entry) => entry.rect)]) {
+      for (const rect of [...endpoints.values(), ...frames, ...reservedLabels.map((entry) => entry.rect)]) {
         scenePoints.push([rect.x, rect.y], [rect.x + rect.width, rect.y + rect.height]);
       }
       const bounds = {
@@ -1200,8 +1206,8 @@ export function createRouter(components, connections = [], {
         const interior = JSON.stringify(entry.points.slice(1, -1));
         return (preferredCandidates({
           conn: entry.conn,
-          from: components.get(entry.conn.from),
-          to: components.get(entry.conn.to),
+          from: endpoints.get(entry.conn.from),
+          to: endpoints.get(entry.conn.to),
           start: entry.points[0],
           end: entry.points.at(-1),
           fromSide: sides.fromSide,
@@ -1291,8 +1297,8 @@ export function createRouter(components, connections = [], {
           const { conn } = entry;
           if (entry.points.length < 4 || jointlyImproved.has(conn) || typeOwned.has(conn)
               || hasAuthoredRouteGeometry(conn) || hasAuthoredLabelPlacement(conn)) continue;
-          const from = components.get(conn.from);
-          const to = components.get(conn.to);
+          const from = endpoints.get(conn.from);
+          const to = endpoints.get(conn.to);
           const facing = from.x + from.width <= to.x ? { fromSide: 'right', toSide: 'left' }
             : to.x + to.width <= from.x ? { fromSide: 'left', toSide: 'right' }
               : from.y + from.height <= to.y ? { fromSide: 'bottom', toSide: 'top' }
